@@ -1,3 +1,6 @@
+import "regenerator-runtime/runtime";
+
+import { DEFAULT_OPTIONS, EVENT_TYPES } from "./constants";
 import {
     connectWebsocket,
     authenticate,
@@ -10,11 +13,16 @@ import {
     uuidv4,
     validateAccountAndSite
 } from "./utils/utils";
-import { DEFAULT_OPTIONS, EVENT_TYPES } from "./constants";
-
-import "regenerator-runtime/runtime";
 import { getLocationUpdateCallback } from "./utils/events";
 
+/**
+ * Create the connection object that is used to communicate with Noccela cloud.
+ * Provides methods to connect, authenticate, send requests asynchronously and
+ * custom events with filters.
+ *
+ * @param {String} address WebSocket endpoint address.
+ * @param {Object?} userOptions User provided options object that overrides or supplements defaults.
+ */
 export function createConnection(address, userOptions = {}) {
     if (!address || typeof address !== "string") throw Error("Invalid address");
     if (!address.startsWith("ws"))
@@ -118,6 +126,7 @@ export function createConnection(address, userOptions = {}) {
         );
 
         lastJwtUsed = jwt;
+        nextRetryInterval = options.retryIntervalMin;
     }
 
     /**
@@ -160,12 +169,17 @@ export function createConnection(address, userOptions = {}) {
 
         // Create UUID to track event and request.
         const uuid = uuidv4();
+        // The type of the server response message, need to track this
+        // to later unregister it.
+        let registeredResponseType = null;
 
         switch (type) {
             case EVENT_TYPES["LOCATION_UPDATE"]:
-                validateOptions(filters, null, ["deviceIds"]);
+                validateOptions(filters, ["deviceIds"], ["deviceIds"]);
+                registeredResponseType = "locationUpdate";
                 socketHandler.registerServerCallback(
-                    "locationUpdate",
+                    registeredResponseType,
+                    uuid,
                     getLocationUpdateCallback(
                         accountId,
                         siteId,
@@ -191,9 +205,11 @@ export function createConnection(address, userOptions = {}) {
 
         logger.log(`Registered event ${type}`);
 
-        // Track the event so it can be unregisterec or re-registered if socket
+        // Track the event so it can be unregistered or re-registered if socket
         // is re-established.
         registeredEvents[uuid] = {
+            eventType: type,
+            responseType: registeredResponseType,
             callback: callback,
             args: [type, accountId, siteId, filters, callback]
         };
@@ -201,8 +217,25 @@ export function createConnection(address, userOptions = {}) {
         return uuid;
     }
 
-    async function unregister() {
-        // TODO
+    /**
+     * Unregister an event registered with 'register()'. The UUID provided
+     * is the one returned by register function.
+     *
+     * @param {String} uuid UUID for the registered event.
+     */
+    async function unregister(uuid) {
+        const event = registeredEvents[uuid];
+        if (!event) return false;
+
+        const type = event["responseType"];
+        const eventType = event["eventType"];
+
+        delete registeredEvents[uuid];
+
+        socketHandler.removeServerCallback(type, uuid);
+        logger.log(`Unregistered event ${eventType} with UUID ${uuid}`);
+
+        return true;
     }
 
     /**

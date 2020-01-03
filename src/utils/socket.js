@@ -144,6 +144,12 @@ export function WebsocketMessageHandler(
         messageHandlers = {};
         serverMessageHandlers = {};
         clearTimeout(timeoutCheckTimeout);
+
+        // When onClose is present, user has explicitly called close
+        // and callback is registered to complete the promise.
+        // Otherwise, the socket has closed for unexpected reasons.
+        // Hacky way to do this, but needed because WS doesn't offer Promises by
+        // default.
         if (onClose && typeof onClose === "function") {
             onClose();
         }
@@ -152,6 +158,8 @@ export function WebsocketMessageHandler(
         if (options.reopenBrokenConnection && reconnectCallback && !onClose) {
             reconnectCallback();
         }
+
+        onClose = null;
     };
 
     socket.onmessage = ev => {
@@ -216,7 +224,7 @@ export function WebsocketMessageHandler(
 
         // Log raw message if specified in options.
         if (options?.logRawMessages) {
-            logger?.debug("<-", data.substring(500));
+            logger?.debug("<-", data.substr(0, 100));
         }
     };
 
@@ -243,9 +251,10 @@ export function WebsocketMessageHandler(
         });
     }
 
-    function registerServerCallback(uniqueId, callback) {
+    function registerServerCallback(uniqueId, uuid, callback) {
         const handlerValue = {
-            callback: callback
+            callback: callback,
+            uuid: uuid
         };
 
         if (!serverMessageHandlers.hasOwnProperty(uniqueId)) {
@@ -255,20 +264,41 @@ export function WebsocketMessageHandler(
         serverMessageHandlers[uniqueId].push(handlerValue);
     }
 
+    /**
+     * Add a function to call when socket closes. Used to convert WS closure
+     * into a promise, not for other purposes.
+     *
+     * @param {Function} callback Callback.
+     */
     function addClosureCallback(callback) {
         onClose = callback;
     }
 
-    function removeCallback(uniqueId, uuid) {
-        // TODO
-        delete messageHandlers[uuid];
+    /**
+     * Remove a registered server message callback.
+     *
+     * @param {String} uniqueId UniqueId, or in this case the message type.
+     * @param {String} uuid UUID for the specific registered event to remove.
+     */
+    function removeServerCallback(uniqueId, uuid) {
+        const handlers = serverMessageHandlers[uniqueId];
+        if (!handlers) return;
+        // Filter out matching callbacks.
+        serverMessageHandlers[uniqueId] = handlers.filter(
+            h => h["uuid"] !== uuid
+        );
+
+        // Delete the key altogether if no listeners remain.
+        if (!serverMessageHandlers[uniqueId].length) {
+            delete serverMessageHandlers[uniqueId];
+        }
     }
 
     return {
         sendRequest,
         registerServerCallback,
         addClosureCallback,
-        removeCallback
+        removeServerCallback
     };
 }
 
