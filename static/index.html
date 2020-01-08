@@ -1,3 +1,5 @@
+<!-- Test page, not relevant to the user -->
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -65,41 +67,23 @@
                 addMessage(msg, 2) && consoleError(msg);
         </script>
 
-        <script src="main.js"></script>
+        <script src="main.min.js"></script>
 
         <script>
             let asd = null,
                 asd2 = null;
             setTimeout(async () => {
-                // Create authentication request.
-                const authRequestBody = new URLSearchParams();
-                authRequestBody.append("client_id", 5662);
-                authRequestBody.append(
-                    "client_secret",
+                const {
+                    accessToken
+                } = await NccIntegration.authentication.getToken(
+                    "http://auth.samuel.noccela.xyz",
+                    5662,
                     "gZ24oMIPpD4v97N1nv9GnDLcTPpY2hV9"
                 );
-                authRequestBody.append("grant_type", "client_credentials");
-
-                // Fetch JWT token from authentication server.
-                const authResponse = await fetch(
-                    "http://auth.samuel.noccela.xyz/connect/token",
-                    {
-                        method: "post",
-                        headers: {
-                            "Content-Type": "application/x-www-form-urlencoded"
-                        },
-                        body: authRequestBody
-                    }
-                );
-
-                const {
-                    expires_in: tokenExpiration,
-                    access_token: accessToken
-                } = await authResponse.json();
 
                 // Create NCC websocket object.
-                const ncc = NccIntegration.createConnection(
-                    "ws://partner.samuel.noccela.xyz/api/partner/realtime/listen"
+                const ncc = NccIntegration.realTime.createWSChannel(
+                    "ws://partner.samuel.noccela.xyz"
                 );
 
                 // Connect to Noccela Cloud.
@@ -131,21 +115,29 @@
                 };
 
                 // Register the callback and filtering information.
-                asd2 = ncc.register(
-                    NccIntegration.EVENT_TYPES["LOCATION_UPDATE"],
-                    1, // Account
-                    1, // site
-                    { deviceIds: [1000500916] }, // Additional filters, like device ids.
-                    callback
-                );
+                // asd2 = await ncc.register(
+                //     NccIntegration.EVENT_TYPES["LOCATION_UPDATE"],
+                //     1, // Account
+                //     1, // site
+                //     { deviceIds: [1000500916] }, // Additional filters, like device ids.
+                //     callback
+                // );
 
                 // Register the callback and filtering information.
-                asd2 = ncc.register(
-                    NccIntegration.EVENT_TYPES["TAG_STATE"],
+                // asd2 = await ncc.register(
+                //     NccIntegration.EVENT_TYPES["TAG_STATE"],
+                //     1, // Account
+                //     1, // site
+                //     { deviceIds: [1000500916] }, // Additional filters, like device ids.
+                //     callback2
+                // );
+
+                asd2 = await ncc.register(
+                    NccIntegration.realTime.EVENT_TYPES["TAG_DIFF"],
                     1, // Account
                     1, // site
                     { deviceIds: [1000500916] }, // Additional filters, like device ids.
-                    callback2
+                    (err, asd) => console.log(`${Object.keys(asd.tags)}`)
                 );
 
                 //const initialState = await ncc.getTagState(1, 1);

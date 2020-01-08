@@ -1,4 +1,4 @@
-import { WS_MSG_CONSTANTS } from "../constants";
+import { WS_MSG_CONSTANTS } from "../constants/constants";
 
 /**
  * Wraps WebSocket connect as a Promise.
@@ -221,7 +221,7 @@ export function WebsocketMessageHandler(
                             e
                         );
                     }
-                }, 0)
+                }, 0);
             }
 
             // Remove the single-shot callback.

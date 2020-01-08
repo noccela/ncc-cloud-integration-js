@@ -1,4 +1,4 @@
-import { WS_READYSTATE } from "../constants";
+import { WS_READYSTATE } from "../constants/constants";
 
 /**
  * Generate standard-compliant UUID (v4).

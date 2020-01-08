@@ -1,23 +1,25 @@
 import "regenerator-runtime/runtime";
 
-import { DEFAULT_OPTIONS, EVENT_TYPES } from "./constants";
+import { DEFAULT_OPTIONS, EVENT_TYPES } from "../constants/constants";
 import {
     connectWebsocket,
     authenticate,
     WebsocketMessageHandler,
     scheduleReconnection
-} from "./utils/socket";
+} from "./socket";
 import {
     isWsOpen,
     validateOptions,
     uuidv4,
     validateAccountAndSite
-} from "./utils/utils";
+} from "../utils/utils";
 import {
     getLocationUpdateCallback,
-    getTagInitialStateCallback
-} from "./utils/events";
-import { parseTagLiveData } from "./utils/messagepack";
+    getTagInitialStateCallback,
+    getTagDiffStreamCallback
+} from "../utils/events";
+import { parseTagLiveData } from "../utils/messagepack";
+import { NCC_PATHS } from "../constants/paths";
 
 /**
  * Create the connection object that is used to communicate with Noccela cloud.
@@ -27,10 +29,13 @@ import { parseTagLiveData } from "./utils/messagepack";
  * @param {String} address WebSocket endpoint address.
  * @param {Object?} userOptions User provided options object that overrides or supplements defaults.
  */
-export function createConnection(address, userOptions = {}) {
-    if (!address || typeof address !== "string") throw Error("Invalid address");
-    if (!address.startsWith("ws"))
+export function createWSChannel(domain, userOptions = {}) {
+    if (!domain || typeof domain !== "string") throw Error("Invalid address");
+    if (!domain.startsWith("ws"))
         throw Error("Invalid protocol for WS address, expected ws or wss");
+
+    // Build the complete ws endpoint address.
+    const address = new URL(NCC_PATHS["REALTIME_API"], domain).href;
 
     let socket = null;
     let socketHandler = null;
@@ -66,11 +71,8 @@ export function createConnection(address, userOptions = {}) {
                 for (const [uuid, data] of oldEntries) {
                     const { args } = data;
 
-                    // Remove old
+                    // Remove old registrations.
                     registeredEvents = {};
-
-                    // TODO: If user is subscribed to tag live data,
-                    // new initial state is required.
 
                     try {
                         // Register the event using same arguments as before.
@@ -191,36 +193,40 @@ export function createConnection(address, userOptions = {}) {
                     getLocationUpdateCallback(
                         accountId,
                         siteId,
-                        filters,
+                        finalFilters,
                         callback,
                         logger
                     )
                 );
+
+                let finalFilters = {
+                    ...filters
+                };
+
+                // Add null filters if none are present. Backend quirk.
+                if (!("deviceIds" in finalFilters)) {
+                    finalFilters["deviceIds"] = null;
+                }
+
                 await socketHandler.sendRequest(uuid, {
                     accountId,
                     siteId,
                     action: "tagLocationRequest",
-                    payload: filters
+                    payload: finalFilters
                 });
                 break;
             case EVENT_TYPES["TAG_DIFF"]:
                 validateOptions(filters, ["deviceIds"], null);
-                registeredResponseType = "tagLocationRequest";
+                registeredResponseType = "tagDiffStream";
                 socketHandler.registerServerCallback(
                     registeredResponseType,
                     uuid,
-                    getLocationUpdateCallback(
-                        accountId,
-                        siteId,
-                        filters,
-                        callback,
-                        logger
-                    )
+                    getTagDiffStreamCallback(filters, callback, logger)
                 );
                 await socketHandler.sendRequest(uuid, {
                     accountId,
                     siteId,
-                    action: "tagLocationRequest",
+                    action: "registerToTagChangeStream",
                     payload: filters
                 });
                 break;
@@ -232,9 +238,7 @@ export function createConnection(address, userOptions = {}) {
                 unregisterFromHandler = false;
 
                 getTagState(accountId, siteId)
-                    .then(result => {
-                        callback(null, result);
-                    })
+                    .then(getTagInitialStateCallback(filters, callback, logger))
                     .catch(err => {
                         callback(err, null);
                     });

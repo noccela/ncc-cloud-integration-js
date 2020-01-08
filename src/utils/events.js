@@ -1,5 +1,3 @@
-import { parseTagLiveData } from "./messagepack";
-
 /**
  * Get a callback function that calls the user provided callback
  * if the provided payload from cloud matches the filters.
@@ -46,43 +44,70 @@ export function getLocationUpdateCallback(
     };
 }
 
-export function getTagDiffStreamCallback(
-    accountFilter,
-    siteFilter,
-    additionalFilters,
-    callback,
-    logger
-) {
-    const deviceIds = additionalFilters?.deviceIds;
+export function getTagDiffStreamCallback(filters, callback, logger) {
+    const deviceIds = filters?.deviceIds;
+
+    // TODO: Account and site filters.
 
     return payload => {
-        const tagsResponse = payload["tags"];
-        tagsResponse;
-    };
-}
+        let filteredResponse = payload;
+        if (deviceIds) {
+            // TODO: Filter removedTags.
+            // Only MAC addresses are received which makes it difficult.
 
-export function getTagInitialStateCallback(
-    accountFilter,
-    siteFilter,
-    additionalFilters,
-    callback,
-    logger
-) {
-    const deviceIds = additionalFilters?.deviceIds;
-
-    return payload => {
-        let liveData, error;
-        try {
-            liveData = parseTagLiveData(payload);
-        } catch (e) {
-            error = e;
+            // Filter out irrelevant tags.
+            filteredResponse["tags"] = Object.entries(filteredResponse["tags"])
+                .filter(([mac, data]) => {
+                    const deviceId = data["deviceId"];
+                    return deviceIds.includes(+deviceId);
+                })
+                .reduce((obj, [mac, data]) => {
+                    obj[mac] = data;
+                    return obj;
+                }, {});
         }
 
         setTimeout(() => {
             try {
-                callback(error, liveData);
+                callback(null, filteredResponse);
             } catch (e) {
-                logger.exception("Error in live data callback", e);
+                logger.exception("Error in diff stream callback", e);
+            }
+        }, 0);
+    };
+}
+
+/**
+ * Wraps user provided callback with the provided filters and returns a
+ * new callback that does the filtering implicitly for tag initial state
+ * response.
+ *
+ * @param {Object} filters Request filters.
+ * @param {Function} callback User provided callback.
+ */
+export function getTagInitialStateCallback(filters, callback, logger) {
+    const deviceIds = filters?.deviceIds;
+
+    // TODO: Account and site filters.
+
+    return payload => {
+        let filteredResponse = payload;
+
+        if (deviceIds) {
+            // Filter out irrelevant tags.
+            filteredResponse = Object.keys(payload)
+                .filter(k => deviceIds.includes(+k))
+                .reduce((obj, key) => {
+                    obj[key] = payload[key];
+                    return obj;
+                }, {});
+        }
+
+        setTimeout(() => {
+            try {
+                callback(null, filteredResponse);
+            } catch (e) {
+                logger.exception("Error in tag initial state callback", e);
             }
         }, 0);
     };

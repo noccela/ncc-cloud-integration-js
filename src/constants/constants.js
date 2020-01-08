@@ -1,4 +1,4 @@
-import { consoleLogger } from "./utils/logging";
+import { consoleLogger } from "../utils/logging";
 
 // WebSocket readystates.
 export const WS_READYSTATE = {
@@ -41,13 +41,3 @@ export const DEFAULT_OPTIONS = {
     processMessages: true,
     requestTimeout: 60000
 };
-
-// Valid request types.
-export const VALID_REQUEST_ACTIONS = new Set([
-    "tagLocationRequest",
-    "tagLocationHistoryRequest",
-    "getInitialTagState",
-    "unregisterTagLiveDetails",
-    "unregisterTagDiffStream",
-    "unregisterTagLocation"
-]);
