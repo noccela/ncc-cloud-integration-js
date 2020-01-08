@@ -1,3 +1,5 @@
+import { parseTagLiveData } from "./messagepack";
+
 /**
  * Get a callback function that calls the user provided callback
  * if the provided payload from cloud matches the filters.
@@ -33,11 +35,55 @@ export function getLocationUpdateCallback(
                 );
             }
 
-            try {
-                callback(filteredResponse);
-            } catch (e) {
-                logger.exception("Error in location update callback", e);
-            }
+            setTimeout(() => {
+                try {
+                    callback(null, filteredResponse);
+                } catch (e) {
+                    logger.exception("Error in location update callback", e);
+                }
+            }, 0);
         }
+    };
+}
+
+export function getTagDiffStreamCallback(
+    accountFilter,
+    siteFilter,
+    additionalFilters,
+    callback,
+    logger
+) {
+    const deviceIds = additionalFilters?.deviceIds;
+
+    return payload => {
+        const tagsResponse = payload["tags"];
+        tagsResponse;
+    };
+}
+
+export function getTagInitialStateCallback(
+    accountFilter,
+    siteFilter,
+    additionalFilters,
+    callback,
+    logger
+) {
+    const deviceIds = additionalFilters?.deviceIds;
+
+    return payload => {
+        let liveData, error;
+        try {
+            liveData = parseTagLiveData(payload);
+        } catch (e) {
+            error = e;
+        }
+
+        setTimeout(() => {
+            try {
+                callback(error, liveData);
+            } catch (e) {
+                logger.exception("Error in live data callback", e);
+            }
+        }, 0);
     };
 }

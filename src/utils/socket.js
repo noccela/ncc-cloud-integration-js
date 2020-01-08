@@ -111,7 +111,7 @@ export function WebsocketMessageHandler(
             ) {
                 const reject = handlerData["promiseReject"];
                 if (!reject || typeof reject !== "function") {
-                    logger?.error(
+                    logger.error(
                         `Request ${uniqueId} timeouted and did not have valid reject callback`
                     );
                 } else {
@@ -134,12 +134,15 @@ export function WebsocketMessageHandler(
         setTimeout(checkTimeouts, timeoutCheckInterval);
     }
 
+    // Handle socket error.
     socket.onerror = ({ message }) => {
-        logger?.error(`Socket error: ${message}`);
+        // TODO: Inform user?
+        logger.error(`Socket error: ${message}`);
     };
 
+    // Handle socket closure.
     socket.onclose = ({ code, reason }) => {
-        logger?.log(`Socket closed with code ${code}`);
+        logger.log(`Socket closed with code ${code}`);
         socket.onmessage = null;
         messageHandlers = {};
         serverMessageHandlers = {};
@@ -162,31 +165,43 @@ export function WebsocketMessageHandler(
         onClose = null;
     };
 
+    // Initial handling of raw message from server, pass to relevant callbacks.
     socket.onmessage = ev => {
         const { data } = ev;
 
+        // Respond to server ping.
         if (data === WS_MSG_CONSTANTS["PING_MSG"]) {
-            logger?.debug(`<- PING`);
+            logger.debug(`<- PING`);
             socket.send(WS_MSG_CONSTANTS["PONG_MSG"]);
             return;
         }
 
+        // Parse server message.
         let uniqueId, status, payload;
         try {
             ({ uniqueId, status, payload } = JSON.parse(data));
         } catch (e) {
-            logger?.exception(`Failed to parse message`, e);
+            logger.exception(`Failed to parse message`, e);
             return;
         }
 
         const statusOk = status === WS_MSG_CONSTANTS["CLOUD_RESPONSE_OK"];
 
+        // TODO: Find a smarter way to do this.
+        if (uniqueId === "getInitialTagState" && !statusOk) {
+            // Initial tag state response is of different type if the request
+            // is successful, but if it fails it returns with the original uniqueId.
+            uniqueId = "initialTagState";
+        }
+
         const handler = messageHandlers[uniqueId];
         const serverHandlers = serverMessageHandlers[uniqueId];
 
+        // Call matching single-shot handler or persistent server message
+        // listener.
         if (handler) {
             if (statusOk) {
-                (() => {
+                setTimeout(() => {
                     try {
                         handler["promiseResolve"](payload);
                     } catch (e) {
@@ -195,16 +210,18 @@ export function WebsocketMessageHandler(
                             e
                         );
                     }
-                })();
+                }, 0);
             } else {
-                try {
-                    handler["promiseReject"](status);
-                } catch (e) {
-                    logger.exception(
-                        "Exception thrown inside request reject callback",
-                        e
-                    );
-                }
+                setTimeout(() => {
+                    try {
+                        handler["promiseReject"](status);
+                    } catch (e) {
+                        logger.exception(
+                            "Exception thrown inside request reject callback",
+                            e
+                        );
+                    }
+                }, 0)
             }
 
             // Remove the single-shot callback.
@@ -217,18 +234,27 @@ export function WebsocketMessageHandler(
         } else {
             // This happens when cloud sends an unknown message type (not expected)
             // or a response to a time-outed request.
-            logger?.warn(
+            logger.warn(
                 `Got message with no handler: uniqueId ${uniqueId}, status: ${status}`
             );
         }
 
         // Log raw message if specified in options.
         if (options?.logRawMessages) {
-            logger?.debug("<-", data.substr(0, 100));
+            logger.debug("<-", data.substr(0, 100));
         }
     };
 
-    function sendRequest(uuid, msg, timeout = null) {
+    /**
+     * Send a single-shot request to server, returns promise that resolves
+     * on valid response and rejects on timeout or error.
+     *
+     * @param {String} uuid Generated UUID for the request which will be used to match response.
+     * @param {Object} msg Core message object with type and payload.
+     * @param {Number} timeout Custom timeout in ms, will override default.
+     * @param {String} serverResponseType If present, overrides UUID and uniqueId that is expected for the server response.
+     */
+    function sendRequest(uuid, msg, timeout = null, serverResponseType = null) {
         return new Promise((res, rej) => {
             msg = {
                 ...msg,
@@ -245,12 +271,21 @@ export function WebsocketMessageHandler(
 
             // Add the request and metadata to collection to track it
             // until it times out or response arrives.
-            messageHandlers[uuid] = trackingData;
+            messageHandlers[serverResponseType || uuid] = trackingData;
 
             socket.send(JSON.stringify(msg));
         });
     }
 
+    /**
+     * Register a callback for a server message that is not a response to a request but
+     * can be received multiple times in response of some event on the server, like tag
+     * activity.
+     *
+     * @param {String} uniqueId Id, i.e. response type for the expected server message.
+     * @param {String} uuid UUID for the event registered for this response, used to later remove the listener.
+     * @param {Function} callback Callback to be invoked when a relevant message is received.
+     */
     function registerServerCallback(uniqueId, uuid, callback) {
         const handlerValue = {
             callback: callback,

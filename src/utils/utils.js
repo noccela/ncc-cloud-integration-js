@@ -33,6 +33,7 @@ export function validateAccountAndSite(accountId, siteId) {
 }
 
 /**
+ * Validate object's properties and throw if any issues arise.
  *
  * @param {Object} options Options object.
  * @param {Array} validOptionNames Array of strings for valid property names.

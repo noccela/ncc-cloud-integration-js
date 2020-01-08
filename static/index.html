@@ -112,10 +112,20 @@
 
                 // Create callback that will be called with real-time location data
                 // for registered devices.
-                const callback = payload => {
+                const callback = (err, payload) => {
                     for (const locationUpdate of payload) {
                         console.log(
                             `DeviceId: ${locationUpdate.deviceId}, x: ${locationUpdate.x}, y: ${locationUpdate.y}, z: ${locationUpdate.z}`
+                        );
+                    }
+                };
+
+                const callback2 = (err, payload) => {
+                    for (const [deviceId, state] of Object.entries(payload)) {
+                        console.log(
+                            `Initial state for ${deviceId}: ${JSON.stringify(
+                                state
+                            )}`
                         );
                     }
                 };
@@ -129,6 +139,16 @@
                     callback
                 );
 
+                // Register the callback and filtering information.
+                asd2 = ncc.register(
+                    NccIntegration.EVENT_TYPES["TAG_STATE"],
+                    1, // Account
+                    1, // site
+                    { deviceIds: [1000500916] }, // Additional filters, like device ids.
+                    callback2
+                );
+
+                //const initialState = await ncc.getTagState(1, 1);
                 asd = ncc;
             }, 1000);
         </script>

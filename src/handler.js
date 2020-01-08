@@ -13,7 +13,11 @@ import {
     uuidv4,
     validateAccountAndSite
 } from "./utils/utils";
-import { getLocationUpdateCallback } from "./utils/events";
+import {
+    getLocationUpdateCallback,
+    getTagInitialStateCallback
+} from "./utils/events";
+import { parseTagLiveData } from "./utils/messagepack";
 
 /**
  * Create the connection object that is used to communicate with Noccela cloud.
@@ -65,6 +69,9 @@ export function createConnection(address, userOptions = {}) {
                     // Remove old
                     registeredEvents = {};
 
+                    // TODO: If user is subscribed to tag live data,
+                    // new initial state is required.
+
                     try {
                         // Register the event using same arguments as before.
                         await register(...args);
@@ -74,12 +81,12 @@ export function createConnection(address, userOptions = {}) {
                     }
                 }
             } catch (e) {
-                logger?.exception("Exception while attempting to reconnect", e);
+                logger.exception("Exception while attempting to reconnect", e);
                 reconnect();
                 return;
             }
 
-            logger?.log("Connection re-established");
+            logger.log("Connection re-established");
         }
 
         [retryTimeout, nextRetryInterval] = scheduleReconnection(
@@ -105,17 +112,17 @@ export function createConnection(address, userOptions = {}) {
         // Create new WebSocket and handler.
         socket = new WebSocket(address);
 
-        logger?.log(`Connecting to ${address}`);
+        logger.log(`Connecting to ${address}`);
 
         // Connect to cloud.
         await connectWebsocket(socket);
 
-        logger?.log(`Connected, sending token`);
+        logger.log(`Connected, sending token`);
 
         // Send JWT to cloud for authentication.
         await authenticate(socket, jwt);
 
-        logger?.log("Authentication successful");
+        logger.log("Authentication successful");
 
         // All is OK, create WebSocket handler.
         socketHandler = WebsocketMessageHandler(
@@ -172,10 +179,11 @@ export function createConnection(address, userOptions = {}) {
         // The type of the server response message, need to track this
         // to later unregister it.
         let registeredResponseType = null;
+        let unregisterFromHandler = true;
 
         switch (type) {
             case EVENT_TYPES["LOCATION_UPDATE"]:
-                validateOptions(filters, ["deviceIds"], ["deviceIds"]);
+                validateOptions(filters, ["deviceIds"], null);
                 registeredResponseType = "locationUpdate";
                 socketHandler.registerServerCallback(
                     registeredResponseType,
@@ -195,6 +203,43 @@ export function createConnection(address, userOptions = {}) {
                     payload: filters
                 });
                 break;
+            case EVENT_TYPES["TAG_DIFF"]:
+                validateOptions(filters, ["deviceIds"], null);
+                registeredResponseType = "tagLocationRequest";
+                socketHandler.registerServerCallback(
+                    registeredResponseType,
+                    uuid,
+                    getLocationUpdateCallback(
+                        accountId,
+                        siteId,
+                        filters,
+                        callback,
+                        logger
+                    )
+                );
+                await socketHandler.sendRequest(uuid, {
+                    accountId,
+                    siteId,
+                    action: "tagLocationRequest",
+                    payload: filters
+                });
+                break;
+            case EVENT_TYPES["TAG_STATE"]:
+                validateOptions(filters, ["deviceIds"], null);
+                registeredResponseType = "initialTagState";
+
+                // This event has special handling.
+                unregisterFromHandler = false;
+
+                getTagState(accountId, siteId)
+                    .then(result => {
+                        callback(null, result);
+                    })
+                    .catch(err => {
+                        callback(err, null);
+                    });
+
+                break;
             default:
                 throw Error(
                     `Invalid event type ${type}, available types ${Object.keys(
@@ -211,10 +256,35 @@ export function createConnection(address, userOptions = {}) {
             eventType: type,
             responseType: registeredResponseType,
             callback: callback,
-            args: [type, accountId, siteId, filters, callback]
+            args: [type, accountId, siteId, filters, callback],
+            unregisterFromHandler: unregisterFromHandler
         };
 
         return uuid;
+    }
+
+    /**
+     * Fetch initial state for tags on the site.
+     *
+     * @param {Number} accountId Site's account id.
+     * @param {Number} siteId Site's id.
+     */
+    async function getTagState(accountId, siteId) {
+        const payload = await socketHandler.sendRequest(
+            "getInitialTagState",
+            {
+                accountId,
+                siteId,
+                action: "getInitialTagState",
+                payload: null
+            },
+            null,
+            "initialTagState"
+        );
+
+        // Parse the encoded message.
+        const result = parseTagLiveData(payload);
+        return result;
     }
 
     /**
@@ -229,10 +299,13 @@ export function createConnection(address, userOptions = {}) {
 
         const type = event["responseType"];
         const eventType = event["eventType"];
+        const unregisterFromHandler = event["unregisterFromHandler"];
 
         delete registeredEvents[uuid];
 
-        socketHandler.removeServerCallback(type, uuid);
+        if (unregisterFromHandler) {
+            socketHandler.removeServerCallback(type, uuid);
+        }
         logger.log(`Unregistered event ${eventType} with UUID ${uuid}`);
 
         return true;
@@ -269,6 +342,7 @@ export function createConnection(address, userOptions = {}) {
         close,
         register,
         unregister,
-        sendMessageRaw
+        sendMessageRaw,
+        getTagState
     };
 }
