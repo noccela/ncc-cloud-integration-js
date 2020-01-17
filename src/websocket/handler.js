@@ -20,6 +20,10 @@ import {
 } from "../utils/events";
 import { parseTagLiveData } from "../utils/messagepack";
 import { NCC_PATHS } from "../constants/paths";
+import { getToken } from "../rest/authentication";
+
+const SOCKET_HANDLER_MISSING_ERROR =
+    "Cannot send message, no authenticated connection available";
 
 /**
  * Create the connection object that is used to communicate with Noccela cloud.
@@ -40,6 +44,7 @@ export function createWSChannel(domain, userOptions = {}) {
     let socket = null;
     let socketHandler = null;
     let lastJwtUsed = null;
+    let tokenExpirationTimeout = null;
 
     let retryTimeout, nextRetryInterval;
 
@@ -59,9 +64,113 @@ export function createWSChannel(domain, userOptions = {}) {
         debug: (...objs) => options.loggers.forEach(l => l?.debug(...objs))
     };
 
+    async function refreshToken(authServerDomain, clientId, clientSecret) {
+        // Fetch new token from auth. server.
+        logger.log(`Refreshing access token...`);
+
+        // Connection is down currently, throw and try again later.
+        if (socketHandler === null) {
+            throw Error(SOCKET_HANDLER_MISSING_ERROR);
+        }
+
+        const { accessToken: newToken } = await getToken(
+            authServerDomain,
+            clientId,
+            clientSecret
+        );
+
+        logger.debug(`Got new token, sending to cloud`);
+
+        // Send the new token as a request.
+        const uuid = uuidv4();
+        const response = await socketHandler.sendRequest(uuid, {
+            action: "refreshToken",
+            payload: {
+                token: newToken
+            }
+        });
+
+        logger.log(
+            `Token refreshed successfully, new expiration ${response["tokenExpiration"]}`
+        );
+
+        logger.log(newToken);
+
+        lastJwtUsed = newToken;
+
+        return response;
+    }
+
+    /**
+     * Schedule a token refreshal callback.
+     * Handles cases in which this callback fails.
+     * Re-schedules the callback after successful call.
+     * 
+     * @param {Object} args Arguments object.
+     */
+    function scheduleTokenRefresh(args) {
+        const {
+            authServerDomain,
+            tokenExpiration,
+            tokenIssued,
+            clientId,
+            clientSecret
+        } = args;
+
+        // Calculate the wait until token should be refreshed, half of the time
+        // remaining.
+        const tokenSpan = tokenExpiration - tokenIssued;
+        if (typeof tokenSpan !== "number" || tokenSpan <= 0) {
+            throw Error("Received invalid token information");
+        }
+
+        // Calculate timestamp after which token should be refreshed.
+        const tokenRefreshTimestamp = (tokenIssued + tokenSpan / 2) | 0;
+        const currentTimestamp = (Date.now() / 1000) | 0;
+
+        // Get ms until token should be refreshed, with given minimum wait.
+        const timeUntilRefresh =
+            Math.max((tokenRefreshTimestamp - currentTimestamp) * 1000, 1000) |
+            0;
+
+        clearTimeout(tokenExpirationTimeout);
+        const callback = async () => {
+            try {
+                const { tokenExpiration, tokenIssued } = await refreshToken(
+                    authServerDomain,
+                    clientId,
+                    clientSecret
+                );
+
+                // Schedule next refreshal with new values.
+                scheduleTokenRefresh({
+                    ...args,
+                    tokenExpiration: +tokenExpiration,
+                    tokenIssued: +tokenIssued
+                });
+            } catch (e) {
+                // The authentication might fail for any number of reasons,
+                // has to be handled and tried again later.
+                logger.exception(
+                    "Error while fetching new token, trying again later",
+                    e
+                );
+                setTimeout(callback, options.tokenRefreshFailureRetryTimeout);
+            }
+        };
+
+        logger.debug(
+            `Refreshing the token at ${new Date(tokenRefreshTimestamp * 1000)}`
+        );
+        tokenExpirationTimeout = setTimeout(callback, timeUntilRefresh);
+    }
+
     // Called by socket handler if connection closes unexpectedly.
     // Attempts to connect again later with increasing intervals.
     function reconnect() {
+        // Previous socket handler should no longer be used.
+        socketHandler = null;
+
         // Attempt to connect, authenticate and re-establish the previous state.
         async function connectionAttempt() {
             try {
@@ -101,6 +210,39 @@ export function createWSChannel(domain, userOptions = {}) {
     }
 
     /**
+     * Fetch new token from authentication server and connect the WebSocket in
+     * one go. Also automatically schedules new token retrieval if 'automaticTokenRenewal'
+     * is true in options.
+     * 
+     * @param {String} authServerDomain Authentication server domain.
+     * @param {String} clientId Client ID to authenticate with.
+     * @param {String} clientSecret Client secret.
+     */
+    async function authenticateAndConnect(
+        authServerDomain,
+        clientId,
+        clientSecret
+    ) {
+        const { accessToken: token } = await getToken(
+            authServerDomain,
+            clientId,
+            clientSecret
+        );
+
+        const { tokenExpiration, tokenIssued } = await connect(token);
+
+        if (options.automaticTokenRenewal) {
+            scheduleTokenRefresh({
+                authServerDomain,
+                tokenExpiration,
+                tokenIssued,
+                clientId,
+                clientSecret
+            });
+        }
+    }
+
+    /**
      * Create connection to Noccela cloud and authenticate the connection.
      * @param {String} jwt JWT token received from authentication server.
      */
@@ -122,9 +264,14 @@ export function createWSChannel(domain, userOptions = {}) {
         logger.log(`Connected, sending token`);
 
         // Send JWT to cloud for authentication.
-        await authenticate(socket, jwt);
+        const { tokenExpiration, tokenIssued } = await authenticate(
+            socket,
+            jwt
+        );
 
-        logger.log("Authentication successful");
+        logger.log(
+            `Authentication successful, token expiration ${tokenExpiration}`
+        );
 
         // All is OK, create WebSocket handler.
         socketHandler = WebsocketMessageHandler(
@@ -136,6 +283,11 @@ export function createWSChannel(domain, userOptions = {}) {
 
         lastJwtUsed = jwt;
         nextRetryInterval = options.retryIntervalMin;
+
+        return {
+            tokenExpiration,
+            tokenIssued
+        };
     }
 
     /**
@@ -145,6 +297,7 @@ export function createWSChannel(domain, userOptions = {}) {
         if (!isWsOpen(socket)) return;
 
         clearTimeout(retryTimeout);
+        clearTimeout(tokenExpirationTimeout);
 
         return new Promise((res, rej) => {
             socketHandler.addClosureCallback(() => {
@@ -174,6 +327,10 @@ export function createWSChannel(domain, userOptions = {}) {
      * @param {Function} callback Callback when a filtered message is received.
      */
     async function register(type, accountId, siteId, filters, callback) {
+        if (socketHandler === null) {
+            throw Error(SOCKET_HANDLER_MISSING_ERROR);
+        }
+
         validateAccountAndSite(accountId, siteId);
 
         // Create UUID to track event and request.
@@ -199,20 +356,11 @@ export function createWSChannel(domain, userOptions = {}) {
                     )
                 );
 
-                let finalFilters = {
-                    ...filters
-                };
-
-                // Add null filters if none are present. Backend quirk.
-                if (!("deviceIds" in finalFilters)) {
-                    finalFilters["deviceIds"] = null;
-                }
-
                 await socketHandler.sendRequest(uuid, {
                     accountId,
                     siteId,
                     action: "tagLocationRequest",
-                    payload: finalFilters
+                    payload: filters
                 });
                 break;
             case EVENT_TYPES["TAG_DIFF"]:
@@ -274,6 +422,10 @@ export function createWSChannel(domain, userOptions = {}) {
      * @param {Number} siteId Site's id.
      */
     async function getTagState(accountId, siteId) {
+        if (socketHandler === null) {
+            throw Error(SOCKET_HANDLER_MISSING_ERROR);
+        }
+
         const payload = await socketHandler.sendRequest(
             "getInitialTagState",
             {
@@ -308,7 +460,12 @@ export function createWSChannel(domain, userOptions = {}) {
         delete registeredEvents[uuid];
 
         if (unregisterFromHandler) {
-            socketHandler.removeServerCallback(type, uuid);
+            // Unregister from handler, if it exists.
+            // No handler means the socket is temporarily down, no need to
+            // unregister from cloud as new connection will just not re-register it.
+            if (socketHandler) {
+                socketHandler.removeServerCallback(type, uuid);
+            }
         }
         logger.log(`Unregistered event ${eventType} with UUID ${uuid}`);
 
@@ -325,9 +482,7 @@ export function createWSChannel(domain, userOptions = {}) {
      */
     async function sendMessageRaw(action, accountId, siteId, payload) {
         if (socketHandler === null) {
-            throw Error(
-                "Cannot send message, no authenticated connection available"
-            );
+            throw Error(SOCKET_HANDLER_MISSING_ERROR);
         }
 
         const request = {
@@ -342,6 +497,7 @@ export function createWSChannel(domain, userOptions = {}) {
 
     // Public API.
     return {
+        authenticateAndConnect,
         connect,
         close,
         register,

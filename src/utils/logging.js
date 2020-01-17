@@ -5,5 +5,5 @@ export const consoleLogger = {
     warn: msg => console.warn(addPrefix(msg)),
     error: msg => console.error(addPrefix(msg)),
     exception: (msg, exception) => console.exception(addPrefix(msg), exception),
-    debug: (...objs) => console.debug(...objs)
+    debug: (msg, ...objs) => console.debug(addPrefix(msg), ...objs)
 };

@@ -6,5 +6,5 @@ export const AUTH_TOKEN_ENDPOINT = "/connect/token";
 
 // Relative paths of various API endpoints.
 export const NCC_PATHS = {
-    REALTIME_API: `${PARTNER_API_BASE}/realtime/listen`
+    REALTIME_API: `${PARTNER_API_BASE}/realtime`
 };

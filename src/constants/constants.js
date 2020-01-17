@@ -39,5 +39,7 @@ export const DEFAULT_OPTIONS = {
     onClose: null,
     onError: null,
     processMessages: true,
-    requestTimeout: 60000
+    requestTimeout: 60000,
+    automaticTokenRenewal: true,
+    tokenRefreshFailureRetryTimeout: 60000
 };

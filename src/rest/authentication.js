@@ -43,8 +43,14 @@ export async function getToken(domain, clientId, clientSecret) {
     // Scopes are not used in Noccela APIs, at least yet so ignoring.
     const {
         expires_in: tokenExpiration,
-        access_token: accessToken
+        access_token: accessToken,
+        error
     } = await authResponse.json();
+
+    if (error) {
+        // Error returned by authentication server.
+        throw Error(`Authentication failed: ${error}`);
+    }
 
     return {
         tokenExpiration,

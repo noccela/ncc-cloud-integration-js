@@ -44,12 +44,18 @@ export function authenticate(socket, token) {
                 return;
             }
 
-            const { uniqueId } = initialMessage;
+            const {
+                uniqueId,
+                payload: { tokenExpiration, tokenIssued }
+            } = initialMessage;
 
             // Cloud sends cloud version as first message after successful
             // authentication, if this is present all is ok.
-            if (uniqueId === "cloudVersion") {
-                resolve();
+            if (uniqueId === "authSuccess") {
+                resolve({
+                    tokenExpiration: +tokenExpiration,
+                    tokenIssued: +tokenIssued
+                });
             } else {
                 reject(
                     `Got uknown initial message ${data} after authentication`
@@ -129,6 +135,20 @@ export function WebsocketMessageHandler(
         }
     }
 
+    function rejectAllWaitingHandlers(error) {
+        for (const [uniqueId, handlerData] of Object.entries(messageHandlers)) {
+            const reject = handlerData["promiseReject"];
+            if (!reject || typeof reject !== "function") {
+                logger.error(
+                    `Cannot reject handler ${uniqueId} due to missing reject callback`
+                );
+                continue;
+            }
+
+            reject(error);
+        }
+    }
+
     // Schedule periodical timeout check if timeout period has been defined.
     if (timeout) {
         setTimeout(checkTimeouts, timeoutCheckInterval);
@@ -144,6 +164,10 @@ export function WebsocketMessageHandler(
     socket.onclose = ({ code, reason }) => {
         logger.log(`Socket closed with code ${code}`);
         socket.onmessage = null;
+
+        // Reject all waiting handlers to that they are not left hanging forever.
+        rejectAllWaitingHandlers("Socket closed");
+
         messageHandlers = {};
         serverMessageHandlers = {};
         clearTimeout(timeoutCheckTimeout);
@@ -240,8 +264,8 @@ export function WebsocketMessageHandler(
         }
 
         // Log raw message if specified in options.
-        if (options?.logRawMessages) {
-            logger.debug("<-", data.substr(0, 100));
+        if (options.logRawMessages) {
+            logger.debug("<-", data.substr(0, 150));
         }
     };
 
