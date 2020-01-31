@@ -90,26 +90,24 @@
                 // );
 
                 // Create NCC websocket object.
-                const ncc = NccIntegration.realTime.createWSChannel(
+                const ncc = new NccIntegration.realTime.EventChannel(
                     "ws://partner.samuel.noccela.xyz"
                 );
 
                 // Connect to Noccela Cloud.
-                try {
-                    await ncc.authenticateAndConnect(
-                        "http://auth.samuel.noccela.xyz",
-                        5662,
-                        "gZ24oMIPpD4v97N1nv9GnDLcTPpY2hV9"
-                    );
-                    // await ncc.connect(accessToken);
-                } catch (err) {
-                    alert(`Error while connecting: ${err}`);
-                    return;
-                }
+                await ncc.connectAndAuthenticate(
+                    "http://auth.samuel.noccela.xyz",
+                    7142,
+                    "pj62txhSptVBFnF5fyQgurPeRIcMxqEf"
+                );
 
                 // Create callback that will be called with real-time location data
                 // for registered devices.
                 const callback = (err, payload) => {
+                    if (err) {
+                        console.error(err);
+                        return;
+                    }
                     for (const locationUpdate of payload) {
                         console.log(
                             `DeviceId: ${locationUpdate.deviceId}, x: ${locationUpdate.x}, y: ${locationUpdate.y}, z: ${locationUpdate.z}`
@@ -118,6 +116,10 @@
                 };
 
                 const callback2 = (err, payload) => {
+                    if (err) {
+                        console.error(err);
+                        return;
+                    }
                     for (const [deviceId, state] of Object.entries(payload)) {
                         console.log(
                             `Initial state for ${deviceId}: ${JSON.stringify(
@@ -128,30 +130,38 @@
                 };
 
                 // Register the callback and filtering information.
-                // asd2 = await ncc.register(
-                //     NccIntegration.EVENT_TYPES["LOCATION_UPDATE"],
-                //     1, // Account
-                //     1, // site
-                //     { deviceIds: [1000500916] }, // Additional filters, like device ids.
-                //     callback
-                // );
+                // try {
+                //     asd2 = await ncc.register(
+                //         NccIntegration.realTime.EVENT_TYPES["LOCATION_UPDATE"],
+                //         1, // Account
+                //         1, // site
+                //         { deviceIds: [1000500916] }, // Additional filters, like device ids.
+                //         callback
+                //     );
+                // } catch (e) {
+                //     console.error("Failed to register", e);
+                // }
 
                 // Register the callback and filtering information.
                 // asd2 = await ncc.register(
-                //     NccIntegration.EVENT_TYPES["TAG_STATE"],
+                //     NccIntegration.realTime.EVENT_TYPES["TAG_STATE"],
                 //     1, // Account
                 //     1, // site
                 //     { deviceIds: [1000500916] }, // Additional filters, like device ids.
                 //     callback2
                 // );
 
-                // asd2 = await ncc.register(
-                //     NccIntegration.realTime.EVENT_TYPES["TAG_DIFF"],
-                //     1, // Account
-                //     1, // site
-                //     { deviceIds: [1000500916] }, // Additional filters, like device ids.
-                //     (err, asd) => console.log(`${Object.keys(asd.tags)}`)
-                // );
+                asd2 = await ncc.register(
+                    NccIntegration.realTime.EVENT_TYPES["TAG_DIFF"],
+                    1, // Account
+                    1, // site
+                    { deviceIds: [1000500916] }, // Additional filters, like device ids.
+                    (err, asd) => console.log(`${JSON.stringify(asd.tags)}`)
+                );
+
+                setTimeout(async () => {
+                    await ncc.unregister(asd2);
+                }, 30000);
 
                 //const initialState = await ncc.getTagState(1, 1);
                 asd = ncc;

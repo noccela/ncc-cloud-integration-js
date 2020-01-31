@@ -1,10 +1,10 @@
 // Expose all relevant public properties.
 import { EVENT_TYPES } from "./constants/constants";
-import { createWSChannel } from "./websocket/handler";
+import { EventChannel } from "./socket/eventhandler";
 import { getToken } from "./rest/authentication";
 
 export const realTime = {
-    createWSChannel,
+    EventChannel,
     EVENT_TYPES
 };
 

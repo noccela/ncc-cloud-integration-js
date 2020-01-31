@@ -41,5 +41,9 @@ export const DEFAULT_OPTIONS = {
     processMessages: true,
     requestTimeout: 60000,
     automaticTokenRenewal: true,
-    tokenRefreshFailureRetryTimeout: 60000
+    tokenRefreshFailureRetryTimeout: 60000,
+    useWebWorkers: true
 };
+
+const SOCKET_HANDLER_MISSING_ERROR =
+    "Cannot send message, no authenticated connection available";
