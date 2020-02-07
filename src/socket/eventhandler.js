@@ -20,14 +20,22 @@ import { Dependencies, RegisteredEvent } from "./models";
 import { RobustAuthenticatedWSChannel } from "./connectionhandler";
 
 /**
- * Create the connection object that is used to communicate with Noccela cloud.
- * Provides methods to connect, authenticate, send requests asynchronously and
- * custom events with filters.
+ * Class that encloses a connection to Noccela's backend and provides high-level
+ * methods that enable registering to events and sending requests.
  *
- * @param {String} address WebSocket endpoint address.
- * @param {Object?} userOptions User provided options object that overrides or supplements defaults.
+ * Manages the internal state of the session and handles re-opening broken connections
+ * and re-establishing session.
+ *
+ * @export
+ * @class EventChannel
  */
 export class EventChannel {
+    /**
+     * Creates an instance of EventChannel.
+     * @param {String} domain Domain for the backend.
+     * @param {Object} [userOptions={}] User-provided options that override defaults.
+     * @memberof EventChannel
+     */
     constructor(domain, userOptions = {}) {
         // Build the complete ws endpoint address.
         const address = new URL(NCC_PATHS["REALTIME_API"], domain).href;
@@ -71,13 +79,15 @@ export class EventChannel {
             this._dependencyContainer
         );
 
-        this._connection.setOnReconnectCallback(this._reregisterEvents);
+        this._connection.setOnReconnectCallback(
+            this._reregisterEvents.bind(this)
+        );
     }
 
     // Handle event re-registration after broken connection is fixed.
     async _reregisterEvents() {
         // Re-register events.
-        const oldEntries = Object.entries(registeredEvents);
+        const oldEntries = Object.entries(this._registeredEvents);
         for (const [uuid, data] of oldEntries) {
             const { args } = data;
 
@@ -86,7 +96,7 @@ export class EventChannel {
 
             try {
                 // Register the event using same arguments as before.
-                await this._register(...args);
+                await this.register(...args);
             } catch (e) {
                 // TODO: What should happen in this situation?
                 this._logger.exception("Error while re-registering event", e);
@@ -100,17 +110,7 @@ export class EventChannel {
      * @param {String} jwt JWT token received from authentication server.
      */
     async connect(jwt) {
-        debugger;
         return this._connection.connect(jwt);
-    }
-
-    async connectAndAuthenticate(authServerDomain, clientId, clientSecret) {
-        //debugger;
-        return this._connection.authenticateAndConnect(
-            authServerDomain,
-            clientId,
-            clientSecret
-        );
     }
 
     /**
@@ -121,9 +121,11 @@ export class EventChannel {
      * @param {String} authServerDomain Authentication server domain.
      * @param {String} clientId Client ID to authenticate with.
      * @param {String} clientSecret Client secret.
+     * @returns Promise that resolves when connection is established.
+     * @memberof EventChannel
      */
     async connectPersistent(authServerDomain, clientId, clientSecret) {
-        return this._connection.authenticateAndConnect(
+        return this._connection.createAuthenticatedConnection(
             authServerDomain,
             clientId,
             clientSecret

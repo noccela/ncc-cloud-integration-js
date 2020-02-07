@@ -15,7 +15,11 @@ export function connectWebsocket(socket) {
             socket.onclose = null;
             const code = ev.code;
             const reason = ev.reason;
-            reject(`Failed to connect, code ${code}, reason ${reason}`);
+            reject(
+                `Failed to connect, code ${code}${
+                    !!reason ? `, reason ${reason}` : ""
+                }`
+            );
         };
     });
 }

@@ -7,10 +7,23 @@ import {
 } from "./socketutils";
 import { getToken } from "../rest/authentication";
 import { WS_READYSTATE } from "../constants/constants";
+import { Dependencies } from "./models";
 
-// Encloses WS channel that has the ability to re-establish authenticated
-// connection and the related request handler.
+/**
+ * Encloses a {@link RequestHandler} and provides additional 'robustness'
+ * features on it, namely this class handles scheduling new connection
+ * attempts when socket closes *unexpectedly*.
+ *
+ * @class RobustWSChannel
+ */
 class RobustWSChannel {
+    /**
+     * Creates an instance of RobustWSChannel.
+     * @param {String} address Socket endpoint address.
+     * @param {Object} options
+     * @param {Dependencies} dependencyContainer
+     * @memberof RobustWSChannel
+     */
     constructor(address, options, dependencyContainer) {
         if (!address || typeof address !== "string")
             throw Error("Invalid address");
@@ -33,54 +46,6 @@ class RobustWSChannel {
         this._dependencyContainer = dependencyContainer;
 
         this._reconnect = this._reconnect.bind(this);
-    }
-
-    async sendMessageRaw(action, account, site, payload) {
-        if (this._socketHandler === null) {
-            throw Error(SOCKET_HANDLER_MISSING_ERROR);
-        }
-
-        validateAccountAndSite(account, site);
-
-        const request = {
-            accountId: account,
-            siteId: site,
-            payload: payload,
-            action: action
-        };
-
-        return await socketHandler.sendRequest(request);
-    }
-
-    setOnReconnectCallback(onConnectionRecreated) {
-        if (
-            onConnectionRecreated &&
-            typeof onConnectionRecreated !== "function"
-        ) {
-            throw new ArgumentException("onConnectionRecreated");
-        }
-
-        this._onConnectionRecreated = onConnectionRecreated;
-    }
-
-    async close() {
-        if (!isWsOpen(this._socket)) return;
-
-        await new Promise((res, rej) => {
-            // Resolve when request handler calls back when socket is closed.
-            this._socketHandler.addClosureCallback(() => {
-                res();
-                this._socketHandler = null;
-            });
-
-            clearTimeout(this._retryTimeout);
-
-            try {
-                this._socket.close();
-            } catch (e) {
-                rej(e);
-            }
-        });
     }
 
     // Called by socket handler if connection closes unexpectedly.
@@ -120,6 +85,86 @@ class RobustWSChannel {
         );
     }
 
+    /**
+     * Send a message with payload directly.
+     *
+     * @param {String} action Action name.
+     * @param {Number} account Site's account ID.
+     * @param {Number} site Site's ID.
+     * @param {Object} payload Action's payload.
+     * @returns Promise that resolves with the response payload.
+     * @memberof RobustWSChannel
+     */
+    async sendMessageRaw(action, account, site, payload) {
+        if (this._socketHandler === null) {
+            throw Error(SOCKET_HANDLER_MISSING_ERROR);
+        }
+
+        validateAccountAndSite(account, site);
+
+        const request = {
+            accountId: account,
+            siteId: site,
+            payload: payload,
+            action: action
+        };
+
+        return await socketHandler.sendRequest(request);
+    }
+
+    /**
+     * Set a callback that will be called when socket connection was re-established
+     * after unexpected closure. Can be used to for example handle re-establishing
+     * the state before closure.
+     *
+     * @param {Function} onConnectionRecreated
+     * @memberof RobustWSChannel
+     */
+    setOnReconnectCallback(onConnectionRecreated) {
+        if (
+            onConnectionRecreated &&
+            typeof onConnectionRecreated !== "function"
+        ) {
+            throw new ArgumentException("onConnectionRecreated");
+        }
+
+        this._onConnectionRecreated = onConnectionRecreated;
+    }
+
+    /**
+     * Close the underlying connection.
+     *
+     * @returns Promise that resolves when connection is closed.
+     * @memberof RobustWSChannel
+     */
+    async close() {
+        if (!isWsOpen(this._socket)) return;
+
+        await new Promise((res, rej) => {
+            // Resolve when request handler calls back when socket is closed.
+            this._socketHandler.setClosureCallback(() => {
+                res();
+                this._socketHandler = null;
+            });
+
+            clearTimeout(this._retryTimeout);
+
+            try {
+                this._socket.close();
+            } catch (e) {
+                rej(e);
+            }
+        });
+    }
+
+    /**
+     * Connect to WS endpoint and authenticate with the given JSON Web Token.
+     *
+     * @param {String} jwt Encoded JWT to authenticate with.
+     * @returns Resolves if both connecting and authentication were successful,
+     * rejects with error otherwise.
+     * @memberof RobustWSChannel
+     */
     async connect(jwt) {
         if (!jwt || typeof jwt !== "string") throw Error("Invalid JWT");
 
@@ -162,6 +207,7 @@ class RobustWSChannel {
         };
     }
 
+    /** @see {@link RequestHandler#registerServerCallback} */
     registerServerCallback(registeredResponseType, uuid, callback) {
         this._socketHandler.registerServerCallback(
             registeredResponseType,
@@ -170,10 +216,12 @@ class RobustWSChannel {
         );
     }
 
+    /** @see {@link RequestHandler#removeServerCallback} */
     unregisterServerCallback(uniqueId, uuid) {
         this._socketHandler.removeServerCallback(uniqueId, uuid);
     }
 
+    /** @see {@link RequestHandler#sendRequest} */
     async sendRequest(uuid, msg, timeout = null, serverResponseType = null) {
         if (typeof uuid !== "string") {
             throw new ArgumentException("uuid");
@@ -186,6 +234,12 @@ class RobustWSChannel {
         );
     }
 
+    /**
+     * True if underlying connection is open and authenticated.
+     *
+     * @readonly
+     * @memberof RobustWSChannel
+     */
     get connected() {
         return (
             !!this._socket &&
@@ -195,8 +249,17 @@ class RobustWSChannel {
     }
 }
 
+/**
+ * Handles automatic periodic refreshing of JWT token.
+ *
+ * @export
+ * @class RobustAuthenticatedWSChannel
+ * @inheritdoc
+ * @extends {RobustWSChannel}
+ */
 export class RobustAuthenticatedWSChannel extends RobustWSChannel {
-    async refreshToken(authServerDomain, clientId, clientSecret) {
+    // Fetch a new token and re-authenticate with the conneciton.
+    async _refreshToken(authServerDomain, clientId, clientSecret) {
         // Fetch new token from auth. server.
         this._logger.log(`Refreshing access token...`);
 
@@ -297,7 +360,20 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
         this._tokenExpirationTimeout = setTimeout(callback, timeUntilRefresh);
     }
 
-    async authenticateAndConnect(authServerDomain, clientId, clientSecret) {
+    /**
+     * Fetch token, create an authenticated connection to backend and schedule
+     * automatic token refreshals.
+     *
+     * @param {String} authServerDomain Domain for authentication server.
+     * @param {Number} clientId Client ID.
+     * @param {String} clientSecret Client secret.
+     * @memberof RobustAuthenticatedWSChannel
+     */
+    async createAuthenticatedConnection(
+        authServerDomain,
+        clientId,
+        clientSecret
+    ) {
         const { accessToken: token } = await getToken(
             authServerDomain,
             clientId,
@@ -317,6 +393,7 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
         }
     }
 
+    /** @inheritdoc */
     async close() {
         clearTimeout(this._tokenExpirationTimeout);
         await super.close();
