@@ -1,7 +1,29 @@
 import { WS_MSG_CONSTANTS } from "../constants/constants";
 import { TrackedRequest } from "./models";
 
+/**
+ * This class handles sending and receiving messages to and from backend
+ * through WebSocket provided to it. This is the lowest level handler for
+ * WS, handling directly WS related events.
+ *
+ * Additional features is providing timeout-based request rejection.
+ *
+ * This class handles internally some Noccela API specific intricasies
+ * to make the usage simpler.
+ *
+ * @export
+ * @class RequestHandler
+ */
 export class RequestHandler {
+    /**
+     * Creates an instance of RequestHandler.
+     * @param {WebSocket} socket Open WebSocket.
+     * @param {Object} options
+     * @param {Function} reconnectCallback Callback to call when socket
+     * should be reconnected.
+     * @param {Object} dependencyContainer
+     * @memberof RequestHandler
+     */
     constructor(socket, options, reconnectCallback, dependencyContainer) {
         const readyState = socket.readyState;
         if (!Number.isInteger(readyState) || readyState != 1) {
@@ -9,7 +31,7 @@ export class RequestHandler {
         }
 
         // Map request ids/message types to metadata and callbacks.
-        this._messageHandlers = {};
+        this._requestHandlers = {};
         this._serverMessageHandlers = {};
 
         // Timeout id for the periodical check.
@@ -68,7 +90,7 @@ export class RequestHandler {
         // Reject all waiting handlers to that they are not left hanging forever.
         this._rejectAllWaitingHandlers("socket closed");
 
-        this._messageHandlers = {};
+        this._requestHandlers = {};
         this._serverMessageHandlers = {};
         clearTimeout(this._timeoutCheckTimeout);
 
@@ -105,9 +127,9 @@ export class RequestHandler {
         }
 
         // Parse server message.
-        let uniqueId, status, payload;
+        let uniqueId, action, status, payload;
         try {
-            ({ uniqueId, status, payload } = JSON.parse(data));
+            ({ uniqueId, action, status, payload } = JSON.parse(data));
         } catch (e) {
             this._logger.exception(`Failed to parse message`, e);
             return;
@@ -128,8 +150,8 @@ export class RequestHandler {
             skipHandlerCheck = true;
         }
 
-        const handler = this._messageHandlers[uniqueId];
-        const serverHandlers = this._serverMessageHandlers[uniqueId];
+        const handler = this._requestHandlers[uniqueId];
+        const serverHandlers = this._serverMessageHandlers[action];
 
         if (!skipHandlerCheck) {
             // Call matching single-shot handler or persistent server message
@@ -160,7 +182,7 @@ export class RequestHandler {
                 }
 
                 // Remove the single-shot callback.
-                delete this._messageHandlers[uniqueId];
+                delete this._requestHandlers[uniqueId];
             } else if (serverHandlers) {
                 // Call all callbacks registered to this server message.
                 for (const handler of serverHandlers) {
@@ -179,7 +201,8 @@ export class RequestHandler {
                 // This happens when cloud sends an unknown message type (not expected)
                 // or a response to a time-outed request.
                 this._logger.warn(
-                    `Got message with no handler: uniqueId ${uniqueId}, status: ${status}`
+                    `Got message with no handler: uniqueId/action ${uniqueId ||
+                        action}, status: ${status}`
                 );
             }
         }
@@ -194,7 +217,7 @@ export class RequestHandler {
     _checkTimeouts(reschedule = true) {
         const handlersToDelete = [];
         for (const [uniqueId, handlerData] of Object.entries(
-            this._messageHandlers
+            this._requestHandlers
         )) {
             if (handlerData.hasTimedOut(Date.now())) {
                 setTimeout(() => {
@@ -212,7 +235,7 @@ export class RequestHandler {
         }
 
         for (const uuid of handlersToDelete) {
-            delete this._messageHandlers[uuid];
+            delete this._requestHandlers[uuid];
         }
 
         // Re-schedule the check.
@@ -227,7 +250,7 @@ export class RequestHandler {
     // Reject all waiting request promises with a given message.
     _rejectAllWaitingHandlers(error) {
         for (const [uniqueId, handlerData] of Object.entries(
-            this._messageHandlers
+            this._requestHandlers
         )) {
             setTimeout(() => {
                 try {
@@ -243,10 +266,12 @@ export class RequestHandler {
      * Send a single-shot request to server, returns promise that resolves
      * on valid response and rejects on timeout or error.
      *
-     * @param {String} uuid Generated UUID for the request which will be used to match response.
+     * @param {String} uuid Generated UUID for the request which will
+     * be used to match response.
      * @param {Object} msg Core message object with type and payload.
      * @param {Number} timeout Custom timeout in ms, will override default.
-     * @param {String} serverResponseType If present, overrides UUID and uniqueId that is expected for the server response.
+     * @param {String} serverResponseType If present, overrides UUID and uniqueId
+     * that is expected for the server response. For special cases.
      */
     sendRequest(uuid, msg, timeout = null, serverResponseType = null) {
         return new Promise((res, rej) => {
@@ -264,7 +289,7 @@ export class RequestHandler {
 
             // Add the request and metadata to collection to track it
             // until it times out or response arrives.
-            this._messageHandlers[serverResponseType || uuid] = trackingData;
+            this._requestHandlers[serverResponseType || uuid] = trackingData;
 
             // Send serialized message through socket.
             this._socket.send(JSON.stringify(finalMessage));
@@ -278,13 +303,13 @@ export class RequestHandler {
      * can be received multiple times in response of some event on the server, like tag
      * activity.
      *
-     * @param {String} uniqueId Id, i.e. response type for the expected server message.
+     * @param {String} action Id, i.e. response type for the expected server message.
      * @param {String} uuid UUID for the event registered for this response, used to later remove the listener.
      * @param {Function} callback Callback to be invoked when a relevant message is received.
      */
-    registerServerCallback(uniqueId, uuid, callback) {
-        if (!uniqueId) throw Error(`Invalid uniqueId ${uniqueId}`);
-        if (!uuid) throw Error(`Invalid uuid ${uuid}`);
+    registerServerCallback(action, uuid, callback) {
+        if (!action) throw Error(`Invalid action '${action}'`);
+        if (!uuid) throw Error(`Invalid uuid '${uuid}'`);
         if (!callback.process) throw Error("Invalid callback");
 
         const handlerValue = {
@@ -292,11 +317,32 @@ export class RequestHandler {
             uuid: uuid
         };
 
-        if (!this._serverMessageHandlers.hasOwnProperty(uniqueId)) {
-            this._serverMessageHandlers[uniqueId] = [];
+        if (!this._serverMessageHandlers.hasOwnProperty(action)) {
+            this._serverMessageHandlers[action] = [];
         }
 
-        this._serverMessageHandlers[uniqueId].push(handlerValue);
+        this._serverMessageHandlers[action].push(handlerValue);
+    }
+
+    /**
+     * Remove a registered server message callback.
+     *
+     * @param {String} action UniqueId, or in this case the message type.
+     * @param {String} uuid UUID for the specific registered event to remove.
+     */
+    removeServerCallback(action, uuid) {
+        const handlers = this._serverMessageHandlers[action];
+        if (!handlers) return;
+
+        // Filter out matching callbacks.
+        this._serverMessageHandlers[action] = handlers.filter(
+            h => h.uuid !== uuid
+        );
+
+        // Delete the key altogether if no listeners remain.
+        if (!this._serverMessageHandlers[action].length) {
+            delete this._serverMessageHandlers[action];
+        }
     }
 
     /**
@@ -305,28 +351,7 @@ export class RequestHandler {
      *
      * @param {Function} callback Callback.
      */
-    addClosureCallback(callback) {
+    setClosureCallback(callback) {
         this._onCloseCallback = callback;
-    }
-
-    /**
-     * Remove a registered server message callback.
-     *
-     * @param {String} uniqueId UniqueId, or in this case the message type.
-     * @param {String} uuid UUID for the specific registered event to remove.
-     */
-    removeServerCallback(uniqueId, uuid) {
-        const handlers = this._serverMessageHandlers[uniqueId];
-        if (!handlers) return;
-
-        // Filter out matching callbacks.
-        this._serverMessageHandlers[uniqueId] = handlers.filter(
-            h => h.uuid !== uuid
-        );
-
-        // Delete the key altogether if no listeners remain.
-        if (!this._serverMessageHandlers[uniqueId].length) {
-            delete this._serverMessageHandlers[uniqueId];
-        }
     }
 }
