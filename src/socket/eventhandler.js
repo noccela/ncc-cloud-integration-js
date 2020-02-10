@@ -1,23 +1,19 @@
 import "regenerator-runtime/runtime";
-
 import { DEFAULT_OPTIONS, EVENT_TYPES } from "../constants/constants";
-import {
-    validateOptions,
-    uuidv4,
-    validateAccountAndSite
-} from "../utils/utils";
 import { NCC_PATHS } from "../constants/paths";
-
+import {
+    uuidv4,
+    validateAccountAndSite,
+    validateOptions
+} from "../utils/utils";
+import { RobustAuthenticatedWSChannel } from "./connectionhandler";
 import {
     getFilteredCallback,
     LocationUpdateFilter,
     TagDiffStreamFilter,
     TagInitialStateFilter
 } from "./filters";
-
 import { Dependencies, RegisteredEvent } from "./models";
-
-import { RobustAuthenticatedWSChannel } from "./connectionhandler";
 
 /**
  * Class that encloses a connection to Noccela's backend and provides high-level
@@ -32,19 +28,23 @@ import { RobustAuthenticatedWSChannel } from "./connectionhandler";
 export class EventChannel {
     /**
      * Creates an instance of EventChannel.
-     * @param {String} domain Domain for the backend.
-     * @param {Object} [userOptions={}] User-provided options that override defaults.
+     * @param {string} domain Domain for the backend.
+     * @param {import("../constants/constants").GlobalOptions} [userOptions={}]
+     * User-provided options that override defaults.
      * @memberof EventChannel
      */
     constructor(domain, userOptions = {}) {
-        // Build the complete ws endpoint address.
+        // Build the complete WS endpoint address.
+        /** @type {string} */
         const address = new URL(NCC_PATHS["REALTIME_API"], domain).href;
 
         // Combine default options with provided ones.
+        /** @type {import("../constants/constants").GlobalOptions} */
         const options = Object.assign(DEFAULT_OPTIONS, userOptions);
         this._options = options;
 
         // Create logger functions that call all registered loggers.
+        /** @type {import("../constants/constants").Logger} */
         const logger = {
             log: (...objs) => options.loggers.forEach(l => l?.log(...objs)),
             warn: (...objs) => options.loggers.forEach(l => l?.warn(...objs)),
@@ -56,6 +56,7 @@ export class EventChannel {
         this._logger = logger;
 
         // Registered events mapped by their id.
+        /** @type {Object.<String, RegisteredEvent>} */
         this._registeredEvents = {};
 
         // Root-level dependency container that can be injected further.
@@ -88,7 +89,7 @@ export class EventChannel {
     async _reregisterEvents() {
         // Re-register events.
         const oldEntries = Object.entries(this._registeredEvents);
-        for (const [uuid, data] of oldEntries) {
+        for (const [, data] of oldEntries) {
             const { args } = data;
 
             // Remove old registrations.
@@ -96,6 +97,7 @@ export class EventChannel {
 
             try {
                 // Register the event using same arguments as before.
+                // @ts-ignore
                 await this.register(...args);
             } catch (e) {
                 // TODO: What should happen in this situation?
@@ -107,7 +109,7 @@ export class EventChannel {
     /**
      * Create connection to Noccela cloud and authenticate the connection.
      *
-     * @param {String} jwt JWT token received from authentication server.
+     * @param {string} jwt JWT token received from authentication server.
      */
     async connect(jwt) {
         return this._connection.connect(jwt);
@@ -118,10 +120,10 @@ export class EventChannel {
      * one go. Also automatically schedules new token retrieval if 'automaticTokenRenewal'
      * is true in options.
      *
-     * @param {String} authServerDomain Authentication server domain.
-     * @param {String} clientId Client ID to authenticate with.
-     * @param {String} clientSecret Client secret.
-     * @returns Promise that resolves when connection is established.
+     * @param {string} authServerDomain Authentication server domain.
+     * @param {number} clientId Client ID to authenticate with.
+     * @param {string} clientSecret Client secret.
+     * @returns {Promise} Promise that resolves when connection is established.
      * @memberof EventChannel
      */
     async connectPersistent(authServerDomain, clientId, clientSecret) {
@@ -145,11 +147,12 @@ export class EventChannel {
      * Provide filters for site and request-specific filters and a callback to
      * be invoked with response filtered with the provided filters.
      *
-     * @param {String} type Type of the event to be registered.
-     * @param {Number} account Account id for the site.
-     * @param {Number} site Site id for the site.
+     * @param {string} type Type of the event to be registered.
+     * @param {number} account Account id for the site.
+     * @param {number} site Site id for the site.
      * @param {Object} filters Request specific filters for request.
-     * @param {Function} callback Callback when a filtered message is received.
+     * @param {(err: String, payload: Object) => void} callback Callback
+     * when a filtered message is received.
      */
     async register(type, account, site, filters, callback) {
         this._validateConnection();
@@ -261,8 +264,8 @@ export class EventChannel {
     /**
      * Fetch initial state for tags on the site.
      *
-     * @param {Number} account Site's account id.
-     * @param {Number} site Site's id.
+     * @param {number} account Site's account id.
+     * @param {number} site Site's id.
      */
     async getTagState(account, site, filters = {}) {
         this._validateConnection();
@@ -294,7 +297,7 @@ export class EventChannel {
      * Unregister an event registered with 'register()'. The UUID provided
      * is the one returned by register function.
      *
-     * @param {String} uuid UUID for the registered event.
+     * @param {string} uuid UUID for the registered event.
      */
     async unregister(uuid) {
         const event = this._registeredEvents[uuid];
@@ -322,9 +325,9 @@ export class EventChannel {
     /**
      * Send a raw request to cloud.
      *
-     * @param {String} action Request type.
-     * @param {Number} account Account id for requested site.
-     * @param {Number} site Site id for requested site.
+     * @param {string} action Request type.
+     * @param {number} account Account id for requested site.
+     * @param {number} site Site id for requested site.
      * @param {Object} payload Request payload object.
      */
     async sendMessageRaw(action, account, site, payload) {

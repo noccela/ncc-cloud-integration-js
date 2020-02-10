@@ -1,6 +1,15 @@
+import { ArgumentException } from "../utils/exceptions";
+
 // Internal registration for event, for tracking the event and allowing
 // it to be unregistered later.
 export class RegisteredEvent {
+    /**
+     * @param {string} eventType
+     * @param {string} responseType
+     * @param {(err: string, payload: Object) => void} callback
+     * @param {Object[]} args
+     * @param {Boolean} unregisterFromHandler
+     */
     constructor(
         eventType,
         responseType,
@@ -8,15 +17,40 @@ export class RegisteredEvent {
         args,
         unregisterFromHandler
     ) {
-        this.eventType = eventType;
-        this.responseType = responseType;
-        this.callback = callback;
-        this.args = args;
-        this.unregisterFromHandler = unregisterFromHandler;
+        this._eventType = eventType;
+        this._responseType = responseType;
+        this._callback = callback;
+        this._args = args;
+        this._unregisterFromHandler = unregisterFromHandler;
+    }
+
+    get eventType() {
+        return this._eventType;
+    }
+
+    get responseType() {
+        return this._responseType;
+    }
+
+    get callback() {
+        return this._callback;
+    }
+
+    get args() {
+        return this._args;
+    }
+
+    get unregisterFromHandler() {
+        return this._unregisterFromHandler;
     }
 }
 
 export class TrackedRequest {
+    /**
+     * @param {(value?: Object) => void} resolve
+     * @param {(err: String) => void} reject
+     * @param {number} timeout
+     */
     constructor(resolve, reject, timeout) {
         if (typeof resolve !== "function")
             throw new ArgumentException("resolve");
@@ -40,7 +74,7 @@ export class TrackedRequest {
     /**
      * Check if request has timed out.
      *
-     * @param {DateTime?} date
+     * @param {number?} date
      * @returns
      * @memberof TrackedRequest
      */
@@ -58,6 +92,8 @@ export class TrackedRequest {
 // Container for dependencies that are commonly passed forward in this project.
 export class Dependencies {
     constructor(args) {
+        /** @type import("../constants/constants").Logger */
+        this._logger = null;
         ({ logger: this._logger } = args);
     }
 

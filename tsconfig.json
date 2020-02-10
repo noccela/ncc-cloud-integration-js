@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "module": "CommonJS",
+        "target": "es2016",
+        "jsx": "preserve",
+        // Enable TS type checking in vanilla JS.
+        "checkJs": true,
+        "allowJs": true,
+        "noEmit": true
+    },
+    "include": [
+        "src/**/*"
+    ],
+}

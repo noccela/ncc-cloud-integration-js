@@ -1,5 +1,5 @@
+import { ArgumentException, NotImplementedError } from "../utils/exceptions";
 import { parseTagLiveData } from "../utils/messagepack";
-import { ArgumentException } from "../utils/exceptions";
 
 export function getFilteredCallback(
     filterClass,
@@ -24,6 +24,12 @@ export function getFilteredCallback(
 }
 
 export class FilteredCallback {
+    /**
+     *
+     * @param {(err: string, payload: Object) => void} callback
+     * @param {BaseFilter} filter
+     * @param {import("./models").Dependencies} dependencies
+     */
     constructor(callback, filter, dependencies) {
         if (!callback || typeof callback !== "function") {
             throw new ArgumentException("callback");
@@ -34,6 +40,8 @@ export class FilteredCallback {
 
         this.callback = callback;
         this.filterObj = filter;
+
+        this._logger = null;
         ({ logger: this._logger } = dependencies);
     }
 
@@ -41,6 +49,7 @@ export class FilteredCallback {
     process(payload) {
         if (!payload) return;
 
+        /** @type Object */
         let filteredMsg;
         try {
             filteredMsg = this.filterObj.filter(payload);
@@ -79,17 +88,22 @@ class BaseFilter {
      * Implementation of a filter for specific use-case.
      *
      * @abstract
-     * @param {Object} msg
+     * @param {Object} payload
      * @memberof FilteredCallback
      */
+    // eslint-disable-next-line no-unused-vars
     filter(payload) {
-        throw NotImplementedError();
+        throw new NotImplementedError();
     }
 }
 
 export class LocationUpdateFilter extends BaseFilter {
     constructor(filters) {
         super();
+
+        this._account = null;
+        this._site = null;
+        this._deviceIds = null;
         ({
             account: this._account,
             site: this._site,
@@ -97,6 +111,7 @@ export class LocationUpdateFilter extends BaseFilter {
         } = filters);
     }
 
+    /** @inheritdoc */
     filter(payload) {
         for (const [siteIdentifier, response] of Object.entries(payload)) {
             // Filter message based on site.
@@ -123,6 +138,10 @@ export class LocationUpdateFilter extends BaseFilter {
 export class TagDiffStreamFilter extends BaseFilter {
     constructor(filters) {
         super();
+
+        this._account = null;
+        this._site = null;
+        this._deviceIds = null;
         ({
             account: this._account,
             site: this._site,
@@ -130,6 +149,7 @@ export class TagDiffStreamFilter extends BaseFilter {
         } = filters);
     }
 
+    /** @inheritdoc */
     filter(payload) {
         let filteredResponse = payload;
         if (this._deviceIds) {
@@ -138,7 +158,7 @@ export class TagDiffStreamFilter extends BaseFilter {
 
             // Filter out irrelevant tags.
             filteredResponse["tags"] = Object.entries(filteredResponse["tags"])
-                .filter(([mac, data]) => {
+                .filter(([, data]) => {
                     const deviceId = data["deviceId"];
                     return this._deviceIds.includes(+deviceId);
                 })
@@ -155,6 +175,10 @@ export class TagDiffStreamFilter extends BaseFilter {
 export class TagInitialStateFilter extends BaseFilter {
     constructor(filters) {
         super();
+
+        this._account = null;
+        this._site = null;
+        this._deviceIds = null;
         ({
             account: this._account,
             site: this._site,
@@ -162,6 +186,7 @@ export class TagInitialStateFilter extends BaseFilter {
         } = filters);
     }
 
+    /** @inheritdoc */
     filter(payload) {
         let filteredResponse = payload;
 

@@ -17,7 +17,7 @@ export function connectWebsocket(socket) {
             const reason = ev.reason;
             reject(
                 `Failed to connect, code ${code}${
-                    !!reason ? `, reason ${reason}` : ""
+                    reason ? `, reason ${reason}` : ""
                 }`
             );
         };
@@ -27,7 +27,7 @@ export function connectWebsocket(socket) {
 /**
  * Authenticate and validate connection to Noccela cloud.
  * @param {WebSocket} socket WebSocket object.
- * @param {String} token JWT token.
+ * @param {string} token JWT token.
  */
 export function authenticate(socket, token) {
     return new Promise((resolve, reject) => {
@@ -68,7 +68,11 @@ export function authenticate(socket, token) {
         socket.onclose = ({ code, reason }) => {
             socket.onmessage = null;
             socket.onclose = null;
-            reject(`Invalid token? Closure code ${code}`);
+            reject(
+                `Invalid token? Closure code ${code}${
+                    reason ? `, ${reason}` : ""
+                }`
+            );
         };
 
         // Send the JWT token through socket to cloud and await response.
@@ -79,8 +83,8 @@ export function authenticate(socket, token) {
 /**
  * If connection was broken, calculate and schedule timeout for new attempt.
  *
- * @param {Number} retryTimeoutId If retry timeout is scheduled, id for timeout.
- * @param {Number} nextRetryInterval Milliseconds for the the next retry to be scheduled.
+ * @param {number} retryTimeoutId If retry timeout is scheduled, id for timeout.
+ * @param {number} nextRetryInterval Milliseconds for the the next retry to be scheduled.
  * @param {Object} options Options object.
  * @param {Function} connectCallback Function to call to retry connection.
  * @param {Object} logger Logger object.

@@ -1,16 +1,20 @@
-import { uuidv4, validateAccountAndSite, isWsOpen } from "../utils/utils";
+import {
+    SOCKET_HANDLER_MISSING_ERROR,
+    WS_READYSTATE
+} from "../constants/constants";
+import { getToken } from "../rest/authentication";
+import { ArgumentException } from "../utils/exceptions";
+import { isWsOpen, uuidv4, validateAccountAndSite } from "../utils/utils";
+import { Dependencies } from "./models";
 import { RequestHandler } from "./requesthandler";
 import {
     authenticate,
     connectWebsocket,
     scheduleReconnection
 } from "./socketutils";
-import { getToken } from "../rest/authentication";
-import { WS_READYSTATE } from "../constants/constants";
-import { Dependencies } from "./models";
 
 /**
- * Encloses a {@link RequestHandler} and provides additional 'robustness'
+ * Encloses a RequestHandler and provides additional 'robustness'
  * features on it, namely this class handles scheduling new connection
  * attempts when socket closes *unexpectedly*.
  *
@@ -19,16 +23,19 @@ import { Dependencies } from "./models";
 class RobustWSChannel {
     /**
      * Creates an instance of RobustWSChannel.
-     * @param {String} address Socket endpoint address.
+     * @param {string} address Socket endpoint address.
      * @param {Object} options
      * @param {Dependencies} dependencyContainer
      * @memberof RobustWSChannel
      */
+
     constructor(address, options, dependencyContainer) {
-        if (!address || typeof address !== "string")
+        if (!address || typeof address !== "string") {
             throw Error("Invalid address");
-        if (!address.startsWith("ws"))
+        }
+        if (!address.startsWith("ws")) {
             throw Error("Invalid protocol for WS address, expected ws or wss");
+        }
 
         this._address = address;
         this._options = options;
@@ -38,10 +45,11 @@ class RobustWSChannel {
         this._socketHandler = null;
         this._lastJwtUsed = null;
         this._tokenExpirationTimeout = null;
-        this._retryTimeout;
-        this._nextRetryInterval;
+        this._retryTimeout = null;
+        this._nextRetryInterval = null;
 
         // Unpack dependencies.
+        this._logger = null;
         ({ logger: this._logger } = dependencyContainer);
         this._dependencyContainer = dependencyContainer;
 
@@ -88,9 +96,9 @@ class RobustWSChannel {
     /**
      * Send a message with payload directly.
      *
-     * @param {String} action Action name.
-     * @param {Number} account Site's account ID.
-     * @param {Number} site Site's ID.
+     * @param {string} action Action name.
+     * @param {number} account Site's account ID.
+     * @param {number} site Site's ID.
      * @param {Object} payload Action's payload.
      * @returns Promise that resolves with the response payload.
      * @memberof RobustWSChannel
@@ -102,6 +110,7 @@ class RobustWSChannel {
 
         validateAccountAndSite(account, site);
 
+        const uuid = uuidv4();
         const request = {
             accountId: account,
             siteId: site,
@@ -109,7 +118,7 @@ class RobustWSChannel {
             action: action
         };
 
-        return await socketHandler.sendRequest(request);
+        return await this._socketHandler.sendRequest(uuid, request);
     }
 
     /**
@@ -160,7 +169,7 @@ class RobustWSChannel {
     /**
      * Connect to WS endpoint and authenticate with the given JSON Web Token.
      *
-     * @param {String} jwt Encoded JWT to authenticate with.
+     * @param {string} jwt Encoded JWT to authenticate with.
      * @returns Resolves if both connecting and authentication were successful,
      * rejects with error otherwise.
      * @memberof RobustWSChannel
@@ -300,15 +309,21 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
      * Handles cases in which this callback fails.
      * Re-schedules the callback after successful call.
      *
-     * @param {Object} args Arguments object.
+     * @param {{authServerDomain: string
+     * , tokenExpiration: number
+     * , tokenIssued: number
+     * , clientId: number
+     * , clientSecret: string}} args Arguments object.
      */
-    scheduleTokenRefresh({
-        authServerDomain,
-        tokenExpiration,
-        tokenIssued,
-        clientId,
-        clientSecret
-    }) {
+    scheduleTokenRefresh(args) {
+        const {
+            authServerDomain,
+            tokenExpiration,
+            tokenIssued,
+            clientId,
+            clientSecret
+        } = args;
+
         // Calculate the wait until token should be refreshed, half of the time
         // remaining.
         const tokenSpan = tokenExpiration - tokenIssued;
@@ -317,8 +332,8 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
         }
 
         // Calculate timestamp after which token should be refreshed.
-        const tokenRefreshTimestamp = (tokenIssued + tokenSpan / 2) | 0;
-        const currentTimestamp = (Date.now() / 1000) | 0;
+        const tokenRefreshTimestamp = Math.trunc(tokenIssued + tokenSpan / 2);
+        const currentTimestamp = Math.trunc(Date.now() / 1000);
 
         // Get ms until token should be refreshed, with given minimum wait.
         const timeUntilRefresh =
@@ -328,7 +343,10 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
         clearTimeout(this._tokenExpirationTimeout);
         const callback = async () => {
             try {
-                const { tokenExpiration, tokenIssued } = await refreshToken(
+                const {
+                    tokenExpiration,
+                    tokenIssued
+                } = await this._refreshToken(
                     authServerDomain,
                     clientId,
                     clientSecret
@@ -364,9 +382,9 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
      * Fetch token, create an authenticated connection to backend and schedule
      * automatic token refreshals.
      *
-     * @param {String} authServerDomain Domain for authentication server.
-     * @param {Number} clientId Client ID.
-     * @param {String} clientSecret Client secret.
+     * @param {string} authServerDomain Domain for authentication server.
+     * @param {number} clientId Client ID.
+     * @param {string} clientSecret Client secret.
      * @memberof RobustAuthenticatedWSChannel
      */
     async createAuthenticatedConnection(

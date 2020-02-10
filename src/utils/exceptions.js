@@ -1,11 +1,11 @@
 export class NotImplementedError extends Error {
-    constructor(...args) {
-        super("Not implemented", ...args);
+    constructor() {
+        super("Not implemented");
     }
 }
 
 export class ArgumentException extends Error {
-    constructor(argName, ...args) {
-        super(`Invalid argument ${argName}`, ...args);
+    constructor(argName) {
+        super(`Invalid argument ${argName}`);
     }
 }

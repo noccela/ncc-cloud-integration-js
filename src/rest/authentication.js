@@ -15,9 +15,9 @@ import { AUTH_TOKEN_ENDPOINT } from "../constants/paths";
  *
  * The OAuth flow used is client credentials.
  *
- * @param {String} domain Base domain for authentication server, without path.
- * @param {Number} clientId Client if for registered app.
- * @param {String} clientSecret Client secret for app.
+ * @param {string} domain Base domain for authentication server, without path.
+ * @param {number} clientId Client if for registered app.
+ * @param {string} clientSecret Client secret for app.
  */
 export async function getToken(domain, clientId, clientSecret) {
     // Construct the full OAuth2 token endpoint.
@@ -26,7 +26,7 @@ export async function getToken(domain, clientId, clientSecret) {
     // Build the request body.
     // Token request only supports x-www-form-urlencoded, not json.
     const authRequestBody = new URLSearchParams();
-    authRequestBody.append("client_id", clientId);
+    authRequestBody.append("client_id", `${clientId}`);
     authRequestBody.append("client_secret", clientSecret);
     authRequestBody.append("grant_type", "client_credentials");
 

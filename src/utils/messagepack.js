@@ -3,7 +3,7 @@ import { deserialize } from "@ygoe/msgpack";
 /**
  * Parse and decode Base64 encoded MsgPack message from cloud.
  *
- * @param {String} baseMsg Base64 encoded message.
+ * @param {string} baseMsg Base64 encoded message.
  */
 export function parseMsgPack(baseMsg) {
     const bytes = atob(baseMsg);

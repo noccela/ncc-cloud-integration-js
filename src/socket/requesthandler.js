@@ -1,4 +1,5 @@
 import { WS_MSG_CONSTANTS } from "../constants/constants";
+import { ArgumentException } from "../utils/exceptions";
 import { TrackedRequest } from "./models";
 
 /**
@@ -52,6 +53,7 @@ export class RequestHandler {
         this._options = options;
 
         // Unpack dependencies.
+        this._logger = null;
         ({ logger: this._logger } = dependencyContainer);
         this._dependencyContainer = dependencyContainer;
 
@@ -84,7 +86,9 @@ export class RequestHandler {
 
     // Handle socket closure.
     _onClose({ code, reason }) {
-        this._logger.log(`Socket closed with code ${code}`);
+        this._logger.log(
+            `Socket closed with code ${code}, ${reason ? ` ${reason}` : ""}`
+        );
         this._socket.onmessage = null;
 
         // Reject all waiting handlers to that they are not left hanging forever.
@@ -121,7 +125,7 @@ export class RequestHandler {
 
         // Respond to server ping.
         if (data === WS_MSG_CONSTANTS["PING_MSG"]) {
-            this._logger.debug(`<- PING`);
+            this._logger.debug("<- PING");
             this._socket.send(WS_MSG_CONSTANTS["PONG_MSG"]);
             return;
         }
@@ -131,7 +135,7 @@ export class RequestHandler {
         try {
             ({ uniqueId, action, status, payload } = JSON.parse(data));
         } catch (e) {
-            this._logger.exception(`Failed to parse message`, e);
+            this._logger.exception("Failed to parse message", e);
             return;
         }
 
@@ -249,9 +253,7 @@ export class RequestHandler {
 
     // Reject all waiting request promises with a given message.
     _rejectAllWaitingHandlers(error) {
-        for (const [uniqueId, handlerData] of Object.entries(
-            this._requestHandlers
-        )) {
+        for (const [, handlerData] of Object.entries(this._requestHandlers)) {
             setTimeout(() => {
                 try {
                     handlerData.reject(error);
@@ -266,11 +268,11 @@ export class RequestHandler {
      * Send a single-shot request to server, returns promise that resolves
      * on valid response and rejects on timeout or error.
      *
-     * @param {String} uuid Generated UUID for the request which will
+     * @param {string} uuid Generated UUID for the request which will
      * be used to match response.
      * @param {Object} msg Core message object with type and payload.
-     * @param {Number} timeout Custom timeout in ms, will override default.
-     * @param {String} serverResponseType If present, overrides UUID and uniqueId
+     * @param {number} timeout Custom timeout in ms, will override default.
+     * @param {string} serverResponseType If present, overrides UUID and uniqueId
      * that is expected for the server response. For special cases.
      */
     sendRequest(uuid, msg, timeout = null, serverResponseType = null) {
@@ -303,9 +305,9 @@ export class RequestHandler {
      * can be received multiple times in response of some event on the server, like tag
      * activity.
      *
-     * @param {String} action Id, i.e. response type for the expected server message.
-     * @param {String} uuid UUID for the event registered for this response, used to later remove the listener.
-     * @param {Function} callback Callback to be invoked when a relevant message is received.
+     * @param {string} action Id, i.e. response type for the expected server message.
+     * @param {string} uuid UUID for the event registered for this response, used to later remove the listener.
+     * @param {import("./filters").FilteredCallback} callback Callback to be invoked when a relevant message is received.
      */
     registerServerCallback(action, uuid, callback) {
         if (!action) throw Error(`Invalid action '${action}'`);
@@ -317,7 +319,12 @@ export class RequestHandler {
             uuid: uuid
         };
 
-        if (!this._serverMessageHandlers.hasOwnProperty(action)) {
+        if (
+            !Object.prototype.hasOwnProperty.call(
+                this._serverMessageHandlers,
+                action
+            )
+        ) {
             this._serverMessageHandlers[action] = [];
         }
 
@@ -327,8 +334,8 @@ export class RequestHandler {
     /**
      * Remove a registered server message callback.
      *
-     * @param {String} action UniqueId, or in this case the message type.
-     * @param {String} uuid UUID for the specific registered event to remove.
+     * @param {string} action UniqueId, or in this case the message type.
+     * @param {string} uuid UUID for the specific registered event to remove.
      */
     removeServerCallback(action, uuid) {
         const handlers = this._serverMessageHandlers[action];

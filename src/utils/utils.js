@@ -22,8 +22,8 @@ export function isWsOpen(ws) {
 
 /**
  * Validate account and site id values.
- * @param {Number} accountId Account id.
- * @param {Number} siteId Site id.
+ * @param {number} accountId Account id.
+ * @param {number} siteId Site id.
  */
 export function validateAccountAndSite(accountId, siteId) {
     if (!accountId || !Number.isInteger(accountId))
@@ -57,7 +57,12 @@ export function validateOptions(
     if (requiredOptionNames) {
         // Check that all required properties are present.
         for (const requiredOptionName of requiredOptionNames) {
-            if (!options.hasOwnProperty(requiredOptionName)) {
+            if (
+                !Object.prototype.hasOwnProperty.call(
+                    options,
+                    requiredOptionName
+                )
+            ) {
                 throw Error(`Missing required option ${requiredOptionName}`);
             }
         }
