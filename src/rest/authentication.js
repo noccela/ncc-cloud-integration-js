@@ -1,5 +1,6 @@
 import fetch from "cross-fetch";
 import { AUTH_TOKEN_ENDPOINT } from "../constants/paths";
+import { ArgumentException } from "../utils/exceptions";
 
 /**
  * Fetch a fresh JWT access token from Noccela's OAuth2 authentication server.
@@ -20,6 +21,16 @@ import { AUTH_TOKEN_ENDPOINT } from "../constants/paths";
  * @param {string} clientSecret Client secret for app.
  */
 export async function getToken(domain, clientId, clientSecret) {
+    if (!domain || domain.startsWith("http")) {
+        throw new ArgumentException("domain");
+    }
+    if (!clientId || typeof clientId != "number") {
+        throw new ArgumentException("clientId");
+    }
+    if (!clientSecret || typeof clientSecret != "string") {
+        throw new ArgumentException("clientSecret");
+    }
+
     // Construct the full OAuth2 token endpoint.
     const url = new URL(AUTH_TOKEN_ENDPOINT, domain).href;
 

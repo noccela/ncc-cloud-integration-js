@@ -45,6 +45,7 @@ export class RegisteredEvent {
     }
 }
 
+// A request sent to cloud and related tracking information and callbacks.
 export class TrackedRequest {
     /**
      * @param {(value?: Object) => void} resolve

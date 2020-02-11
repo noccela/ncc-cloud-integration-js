@@ -1,7 +1,4 @@
-import {
-    SOCKET_HANDLER_MISSING_ERROR,
-    WS_READYSTATE
-} from "../constants/constants";
+import { SOCKET_HANDLER_MISSING_ERROR } from "../constants/constants";
 import { getToken } from "../rest/authentication";
 import { ArgumentException } from "../utils/exceptions";
 import { isWsOpen, uuidv4, validateAccountAndSite } from "../utils/utils";
@@ -28,7 +25,6 @@ class RobustWSChannel {
      * @param {Dependencies} dependencyContainer
      * @memberof RobustWSChannel
      */
-
     constructor(address, options, dependencyContainer) {
         if (!address || typeof address !== "string") {
             throw Error("Invalid address");
@@ -253,7 +249,7 @@ class RobustWSChannel {
         return (
             !!this._socket &&
             !!this._socketHandler &&
-            this._socket.readyState === WS_READYSTATE["OPEN"]
+            this._socket.readyState === WebSocket.OPEN
         );
     }
 }

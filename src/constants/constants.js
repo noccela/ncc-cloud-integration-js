@@ -1,13 +1,5 @@
 import { consoleLogger } from "../utils/logging";
 
-// WebSocket readystates.
-export const WS_READYSTATE = {
-    CONNECTING: 0,
-    OPEN: 1,
-    CLOSING: 2,
-    CLOSED: 3
-};
-
 // Relevant WebSocket closure codes.
 export const WS_CLOSURE_CODES = {
     NORMAL_CLOSURE: 1001,
@@ -26,6 +18,30 @@ export const EVENT_TYPES = {
     TAG_STATE: "TAG_STATE",
     TAG_DIFF: "TAG_DIFF"
 };
+
+// Default settings that are extended or overridden by user provided ones.
+/** @type GlobalOptions */
+export const DEFAULT_OPTIONS = {
+    loggers: [consoleLogger],
+    reopenBrokenConnection: true,
+    retryIntervalMin: 1000,
+    retryIntervalMax: 60000,
+    retryIntervalIncrease: 1000,
+    logRawMessages: true,
+    onMessage: null,
+    onClose: null,
+    onError: null,
+    processMessages: true,
+    requestTimeout: 60000,
+    automaticTokenRenewal: true,
+    tokenRefreshFailureRetryTimeout: 60000,
+    useWebWorkers: true
+};
+
+export const SOCKET_HANDLER_MISSING_ERROR =
+    "Cannot send message, no authenticated connection available";
+
+// Type definitions.
 
 /**
  * @typedef {Object} Logger
@@ -58,25 +74,3 @@ export const EVENT_TYPES = {
  * @prop {Boolean} [useWebWorkers] - Handle socket and filtering in web worker if
  * they are available
  */
-
-// Default settings that are extended or overridden by user provided ones.
-/** @type GlobalOptions */
-export const DEFAULT_OPTIONS = {
-    loggers: [consoleLogger],
-    reopenBrokenConnection: true,
-    retryIntervalMin: 1000,
-    retryIntervalMax: 60000,
-    retryIntervalIncrease: 1000,
-    logRawMessages: true,
-    onMessage: null,
-    onClose: null,
-    onError: null,
-    processMessages: true,
-    requestTimeout: 60000,
-    automaticTokenRenewal: true,
-    tokenRefreshFailureRetryTimeout: 60000,
-    useWebWorkers: true
-};
-
-export const SOCKET_HANDLER_MISSING_ERROR =
-    "Cannot send message, no authenticated connection available";

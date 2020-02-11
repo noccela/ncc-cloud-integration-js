@@ -1,5 +1,3 @@
-import { WS_READYSTATE } from "../constants/constants";
-
 /**
  * Generate standard-compliant UUID (v4).
  * From https://stackoverflow.com/a/2117523
@@ -17,7 +15,7 @@ export function uuidv4() {
  * @param {WebSocket} ws Websocket object.
  */
 export function isWsOpen(ws) {
-    return ws !== null && ws.readyState === WS_READYSTATE["OPEN"];
+    return ws !== null && ws.readyState === WebSocket.OPEN;
 }
 
 /**

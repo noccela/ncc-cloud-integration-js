@@ -6,6 +6,7 @@
         // Enable TS type checking in vanilla JS.
         "checkJs": true,
         "allowJs": true,
+        // Don't actually emit anything, because this is vanilla JS.
         "noEmit": true
     },
     "include": [

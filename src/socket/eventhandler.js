@@ -24,6 +24,7 @@ import { Dependencies, RegisteredEvent } from "./models";
  *
  * @export
  * @class EventChannel
+ * @preserve
  */
 export class EventChannel {
     /**
@@ -32,6 +33,7 @@ export class EventChannel {
      * @param {import("../constants/constants").GlobalOptions} [userOptions={}]
      * User-provided options that override defaults.
      * @memberof EventChannel
+     * @preserve
      */
     constructor(domain, userOptions = {}) {
         // Build the complete WS endpoint address.
@@ -110,6 +112,8 @@ export class EventChannel {
      * Create connection to Noccela cloud and authenticate the connection.
      *
      * @param {string} jwt JWT token received from authentication server.
+     * @memberof EventChannel
+     * @preserve
      */
     async connect(jwt) {
         return this._connection.connect(jwt);
@@ -125,6 +129,7 @@ export class EventChannel {
      * @param {string} clientSecret Client secret.
      * @returns {Promise} Promise that resolves when connection is established.
      * @memberof EventChannel
+     * @preserve
      */
     async connectPersistent(authServerDomain, clientId, clientSecret) {
         return this._connection.createAuthenticatedConnection(
@@ -136,6 +141,11 @@ export class EventChannel {
 
     /**
      * Close connection.
+     *
+     * @memberof EventChannel
+     * @returns {Promise} Promise that resolves when socket is successfully
+     * closed.
+     * @preserve
      */
     async close() {
         await this._connection.close();
@@ -153,6 +163,10 @@ export class EventChannel {
      * @param {Object} filters Request specific filters for request.
      * @param {(err: String, payload: Object) => void} callback Callback
      * when a filtered message is received.
+     * @returns {Promise} Promise that resolves or rejects when backend verifies
+     * or rejects the registration.
+     * @memberof EventChannel
+     * @preserve
      */
     async register(type, account, site, filters, callback) {
         this._validateConnection();
@@ -266,6 +280,8 @@ export class EventChannel {
      *
      * @param {number} account Site's account id.
      * @param {number} site Site's id.
+     * @memberof EventChannel
+     * @preserve
      */
     async getTagState(account, site, filters = {}) {
         this._validateConnection();
@@ -298,6 +314,8 @@ export class EventChannel {
      * is the one returned by register function.
      *
      * @param {string} uuid UUID for the registered event.
+     * @memberof EventChannel
+     * @preserve
      */
     async unregister(uuid) {
         const event = this._registeredEvents[uuid];
@@ -329,6 +347,8 @@ export class EventChannel {
      * @param {number} account Account id for requested site.
      * @param {number} site Site id for requested site.
      * @param {Object} payload Request payload object.
+     * @memberof EventChannel
+     * @preserve
      */
     async sendMessageRaw(action, account, site, payload) {
         return await this._connection.sendMessageRaw(
@@ -339,6 +359,8 @@ export class EventChannel {
         );
     }
 
+    // Validate connection and throw for invalid state to prevent acting on
+    // failed socket.
     _validateConnection() {
         if (!this._connection.connected) {
             throw Error("Authenticated connection does not exists");

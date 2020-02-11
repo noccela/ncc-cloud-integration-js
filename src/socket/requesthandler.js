@@ -19,10 +19,10 @@ export class RequestHandler {
     /**
      * Creates an instance of RequestHandler.
      * @param {WebSocket} socket Open WebSocket.
-     * @param {Object} options
+     * @param {import("../constants/constants").GlobalOptions} options
      * @param {Function} reconnectCallback Callback to call when socket
      * should be reconnected.
-     * @param {Object} dependencyContainer
+     * @param {import("./models").Dependencies} dependencyContainer
      * @memberof RequestHandler
      */
     constructor(socket, options, reconnectCallback, dependencyContainer) {
@@ -53,6 +53,7 @@ export class RequestHandler {
         this._options = options;
 
         // Unpack dependencies.
+        /** @type {import("../constants/constants").Logger} */
         this._logger = null;
         ({ logger: this._logger } = dependencyContainer);
         this._dependencyContainer = dependencyContainer;
@@ -305,9 +306,12 @@ export class RequestHandler {
      * can be received multiple times in response of some event on the server, like tag
      * activity.
      *
-     * @param {string} action Id, i.e. response type for the expected server message.
-     * @param {string} uuid UUID for the event registered for this response, used to later remove the listener.
-     * @param {import("./filters").FilteredCallback} callback Callback to be invoked when a relevant message is received.
+     * @param {string} action Id, i.e. response type for the expected server
+     * message.
+     * @param {string} uuid UUID for the event registered for this response,
+     * used to later remove the listener.
+     * @param {import("./filters").FilteredCallback} callback Callback to be
+     * invoked when a relevant message is received.
      */
     registerServerCallback(action, uuid, callback) {
         if (!action) throw Error(`Invalid action '${action}'`);
