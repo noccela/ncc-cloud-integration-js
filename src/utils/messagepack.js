@@ -28,27 +28,29 @@ export function parseTagLiveData(msg) {
     // Create tag status objects from decoded MessagePack payload.
     // MessagePack loses all information about property names, so the array
     // indices are hard-coded.
-    for (const [mac, tagData] of Object.entries(payload)) {
+    for (const [deviceId, tagData] of Object.entries(payload)) {
         const tagObj = {
-            mac: mac
+            deviceId: +deviceId
         };
-        tagObj["deviceId"] = tagData[0];
         tagObj["deviceModel"] = tagData[1];
         tagObj["name"] = tagData[2];
-        tagObj["status"] = tagData[3];
+        tagObj["batteryVoltage"] = tagData[3];
         tagObj["batteryStatus"] = tagData[4];
-        tagObj["isOnline"] = tagData[5];
-        tagObj["lastActivity"] = tagData[6];
-        tagObj["x"] = tagData[7];
-        tagObj["y"] = tagData[8];
-        tagObj["z"] = tagData[9];
-        tagObj["isLedOrBuzzer"] = tagData[10];
-        tagObj["floorId"] = tagData[12];
-        tagObj["signalLost"] = tagData[13];
-        tagObj["powerSave"] = tagData[14];
-        tagObj["inCharger"] = tagData[15];
-        tagObj["customerViewerProtected"] = tagData[16];
-        tagObj["settings"] = tagData[11];
+        tagObj["status"] = tagData[5];
+        tagObj["temperature"] = tagData[6];
+        tagObj["areas"] = tagData[7];
+        tagObj["wire"] = tagData[8];
+        tagObj["reed"] = tagData[9];
+        tagObj["isOnline"] = tagData[10];
+        tagObj["timestamp"] = tagData[11];
+        tagObj["x"] = tagData[12];
+        tagObj["y"] = tagData[13];
+        tagObj["accountId"] = tagData[14];
+        tagObj["siteId"] = tagData[15];
+        tagObj["accelerometer"] = tagData[16];
+        tagObj["floorId"] = tagData[17];
+        tagObj["signalLost"] = tagData[18];
+        tagObj["powerSave"] = tagData[19];
 
         // Append to result.
         result[tagObj["deviceId"]] = tagObj;

@@ -222,8 +222,8 @@ class RobustWSChannel {
     }
 
     /** @see {@link RequestHandler#removeServerCallback} */
-    unregisterServerCallback(uniqueId, uuid) {
-        this._socketHandler.removeServerCallback(uniqueId, uuid);
+    unregisterServerCallback(action, uuid) {
+        this._socketHandler.removeServerCallback(action, uuid);
     }
 
     /** @see {@link RequestHandler#sendRequest} */

@@ -10,18 +10,12 @@ export class RegisteredEvent {
      * @param {Object[]} args
      * @param {Boolean} unregisterFromHandler
      */
-    constructor(
-        eventType,
-        responseType,
-        callback,
-        args,
-        unregisterFromHandler
-    ) {
+    constructor(eventType, responseType, callback, args, unregisterRequest) {
         this._eventType = eventType;
         this._responseType = responseType;
         this._callback = callback;
         this._args = args;
-        this._unregisterFromHandler = unregisterFromHandler;
+        this._unregisterRequest = unregisterRequest;
     }
 
     get eventType() {
@@ -40,8 +34,8 @@ export class RegisteredEvent {
         return this._args;
     }
 
-    get unregisterFromHandler() {
-        return this._unregisterFromHandler;
+    get unregisterRequest() {
+        return this._unregisterRequest;
     }
 }
 

@@ -90,7 +90,7 @@
                 // );
 
                 // Create NCC websocket object.
-                const ncc = new NccIntegration.realTime.EventChannel(
+                const ncc = new NccIntegration.EventChannel(
                     "ws://partner.samuel.noccela.xyz"
                 );
 
@@ -106,73 +106,18 @@
                     return;
                 }
 
-                // Create callback that will be called with real-time location data
-                // for registered devices.
-                const callback = (err, payload) => {
-                    if (err) {
-                        console.error(err);
-                        return;
-                    }
-                    for (const locationUpdate of payload) {
-                        console.log(
-                            `DeviceId: ${locationUpdate.deviceId}, x: ${locationUpdate.x}, y: ${locationUpdate.y}, z: ${locationUpdate.z}`
-                        );
-                    }
-                };
-
-                const callback2 = (err, payload) => {
-                    if (err) {
-                        console.error(err);
-                        return;
-                    }
-                    for (const [deviceId, state] of Object.entries(payload)) {
-                        console.log(
-                            `Initial state for ${deviceId}: ${JSON.stringify(
-                                state
-                            )}`
-                        );
-                    }
-                };
-
-                // Register the callback and filtering information.
-                try {
-                    asd2 = await ncc.register(
-                        NccIntegration.realTime.EVENT_TYPES["LOCATION_UPDATE"],
-                        1, // Account
-                        1, // site
-                        { deviceIds: [1000500916] }, // Additional filters, like device ids.
-                        callback
-                    );
-                } catch (e) {
-                    console.error("Failed to register", e);
+                function callback(err, payload) {
+                    console.log(JSON.stringify(payload));
                 }
 
                 // Register the callback and filtering information.
-                // asd2 = await ncc.register(
-                //     NccIntegration.realTime.EVENT_TYPES["TAG_STATE"],
-                //     1, // Account
-                //     1, // site
-                //     { deviceIds: [1000500916] }, // Additional filters, like device ids.
-                //     callback2
-                // );
-
-                // asd2 = await ncc.register(
-                //     NccIntegration.realTime.EVENT_TYPES["TAG_DIFF"],
-                //     1, // Account
-                //     1, // site
-                //     { deviceIds: [1000500916] }, // Additional filters, like device ids.
-                //     (err, asd) => console.log(`${JSON.stringify(asd.tags)}`)
-                // );
-
-                // setTimeout(async () => {
-                //     await ncc.unregister(asd2);
-                // }, 30000);
-
-                //const initialState = await ncc.getTagState(1, 1);
-                asd = ncc;
+                await ncc.registerTagDiffStream(
+                    callback,
+                    1, // Account
+                    1, // Site
+                    [1000500916] // Additional filters, like device ids.
+                );
             }, 1000);
         </script>
-        <button onclick="asd.close()">close</button>
-        <button onclick="asd.unregister(asd2)">unregister</button>
     </body>
 </html>

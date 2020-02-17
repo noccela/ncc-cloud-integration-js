@@ -21,7 +21,7 @@ import { ArgumentException } from "../utils/exceptions";
  * @param {string} clientSecret Client secret for app.
  */
 export async function getToken(domain, clientId, clientSecret) {
-    if (!domain || domain.startsWith("http")) {
+    if (!domain || !domain.startsWith("http")) {
         throw new ArgumentException("domain");
     }
     if (!clientId || typeof clientId != "number") {

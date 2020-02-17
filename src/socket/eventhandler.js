@@ -9,9 +9,9 @@ import {
 import { RobustAuthenticatedWSChannel } from "./connectionhandler";
 import {
     getFilteredCallback,
+    TagInitialStateFilter,
     LocationUpdateFilter,
-    TagDiffStreamFilter,
-    TagInitialStateFilter
+    TagDiffStreamFilter
 } from "./filters";
 import { Dependencies, RegisteredEvent } from "./models";
 
@@ -152,12 +152,48 @@ export class EventChannel {
         this._registeredEvents = {};
     }
 
+    async registerLocationUpdate(callback, account, site, deviceIds = null) {
+        return this.register(
+            EVENT_TYPES["LOCATION_UPDATE"],
+            account,
+            site,
+            {
+                deviceIds
+            },
+            callback
+        );
+    }
+
+    async registerInitialTagState(callback, account, site, deviceIds = null) {
+        return this.register(
+            EVENT_TYPES["TAG_STATE"],
+            account,
+            site,
+            {
+                deviceIds
+            },
+            callback
+        );
+    }
+
+    async registerTagDiffStream(callback, account, site, deviceIds = null) {
+        return this.register(
+            EVENT_TYPES["TAG_DIFF"],
+            account,
+            site,
+            {
+                deviceIds
+            },
+            callback
+        );
+    }
+
     /**
      * Register to an API event, such as location update and tag metadata streams.
      * Provide filters for site and request-specific filters and a callback to
      * be invoked with response filtered with the provided filters.
      *
-     * @param {string} type Type of the event to be registered.
+     * @param {string} eventType Type of the event to be registered.
      * @param {number} account Account id for the site.
      * @param {number} site Site id for the site.
      * @param {Object} filters Request specific filters for request.
@@ -168,7 +204,7 @@ export class EventChannel {
      * @memberof EventChannel
      * @preserve
      */
-    async register(type, account, site, filters, callback) {
+    async register(eventType, account, site, filters, callback) {
         this._validateConnection();
         validateAccountAndSite(account, site);
 
@@ -177,7 +213,7 @@ export class EventChannel {
         // The type of the server response message, need to track this
         // to later unregister it.
         let registeredResponseType = null;
-        let unregisterFromHandler = true;
+        let unregisterRequest = null;
 
         const combinedFilters = {
             ...filters,
@@ -185,7 +221,7 @@ export class EventChannel {
             site
         };
 
-        switch (type) {
+        switch (eventType) {
             case EVENT_TYPES["LOCATION_UPDATE"]:
                 validateOptions(filters, ["deviceIds"], null);
                 registeredResponseType = "locationUpdate";
@@ -203,12 +239,19 @@ export class EventChannel {
                     filteredLocationUpdateCallback
                 );
 
-                await this._connection.sendRequest(uuid, {
+                const locationUpdateRequest = {
                     accountId: account,
                     siteId: site,
                     action: "tagLocationRequest",
                     payload: filters
-                });
+                };
+
+                await this._connection.sendRequest(uuid, locationUpdateRequest);
+                unregisterRequest = {
+                    ...locationUpdateRequest,
+                    action: "unregisterTagLocation"
+                };
+
                 break;
             case EVENT_TYPES["TAG_DIFF"]:
                 validateOptions(filters, ["deviceIds"], null);
@@ -226,24 +269,28 @@ export class EventChannel {
                     uuid,
                     filteredTagDiffCallback
                 );
-                await this._connection.sendRequest(uuid, {
+
+                const tagChangeRequest = {
                     accountId: account,
                     siteId: site,
                     action: "registerToTagChangeStream",
                     payload: filters
-                });
+                };
+                await this._connection.sendRequest(uuid, tagChangeRequest);
+                unregisterRequest = {
+                    ...tagChangeRequest,
+                    action: "unregisterTagDiffStream"
+                };
+
                 break;
             case EVENT_TYPES["TAG_STATE"]:
                 validateOptions(filters, ["deviceIds"], null);
                 registeredResponseType = "initialTagState";
 
-                // This event has special handling.
-                unregisterFromHandler = false;
-
                 const initialResponse = await this.getTagState(
                     account,
                     site,
-                    filters
+                    filters["deviceIds"]
                 );
 
                 // Register to future tag state messages.
@@ -251,25 +298,26 @@ export class EventChannel {
                 registeredResponseType = "initialTagState";
 
                 callback(null, initialResponse);
+
                 break;
             default:
                 throw Error(
-                    `Invalid event type ${type}, available types ${Object.keys(
+                    `Invalid event type ${eventType}, available types ${Object.keys(
                         EVENT_TYPES
                     ).join()}`
                 );
         }
 
-        this._logger.log(`Registered event ${type}`);
+        this._logger.log(`Registered event ${eventType}`);
 
         // Track the event so it can be unregistered or re-registered if socket
         // is re-established.
         this._registeredEvents[uuid] = new RegisteredEvent(
-            type,
+            eventType,
             registeredResponseType,
             callback,
-            [type, account, site, filters, callback],
-            unregisterFromHandler
+            [eventType, account, site, filters, callback],
+            unregisterRequest
         );
 
         return uuid;
@@ -283,7 +331,7 @@ export class EventChannel {
      * @memberof EventChannel
      * @preserve
      */
-    async getTagState(account, site, filters = {}) {
+    async getTagState(account, site, deviceIds = null) {
         this._validateConnection();
         validateAccountAndSite(account, site);
 
@@ -293,7 +341,9 @@ export class EventChannel {
                 accountId: account,
                 siteId: site,
                 action: "getInitialTagState",
-                payload: null
+                payload: {
+                    deviceIds
+                }
             },
             null,
             "initialTagState"
@@ -301,11 +351,10 @@ export class EventChannel {
 
         // Parse the encoded message.
         const filter = new TagInitialStateFilter({
-            ...filters,
             account,
-            site
+            site,
+            deviceIds
         });
-
         return filter.filter(payload);
     }
 
@@ -318,23 +367,36 @@ export class EventChannel {
      * @preserve
      */
     async unregister(uuid) {
+        /** @type { RegisteredEvent } */
         const event = this._registeredEvents[uuid];
         if (!event) return false;
 
-        const type = event["responseType"];
-        const eventType = event["eventType"];
-        const unregisterFromHandler = event["unregisterFromHandler"];
+        const eventType = event.eventType;
+        const responseType = event.responseType;
+        const unregisterRequest = event.unregisterRequest;
 
         delete this._registeredEvents[uuid];
 
-        if (unregisterFromHandler) {
-            // Unregister from handler, if it exists.
-            // No handler means the socket is temporarily down, no need to
-            // unregister from cloud as new connection will just not re-register it.
+        // Unregister from handler, if it exists.
+        // No handler means the socket is temporarily down, no need to
+        // unregister from cloud as new connection will just not re-register it.
+        if (this._connection) {
+            this._connection.unregisterServerCallback(responseType, uuid);
+        }
+
+        if (unregisterRequest) {
+            // Send an unregistration request to backend.
             if (this._connection) {
-                this._connection.unregisterServerCallback(type, uuid);
+                const unregistrationUuid = uuidv4();
+                if (this._connection.connected) {
+                    await this._connection.sendRequest(
+                        unregistrationUuid,
+                        unregisterRequest
+                    );
+                }
             }
         }
+
         this._logger.log(`Unregistered event ${eventType} with UUID ${uuid}`);
 
         return true;

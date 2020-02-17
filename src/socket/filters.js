@@ -58,6 +58,8 @@ export class FilteredCallback {
             return;
         }
 
+        if (!filteredMsg) return;
+
         const constructor = filteredMsg.constructor;
 
         // Filter out empty messages.
@@ -109,29 +111,37 @@ export class LocationUpdateFilter extends BaseFilter {
             site: this._site,
             deviceIds: this._deviceIds
         } = filters);
+
+        if (this._deviceIds) {
+            this._deviceIds = new Set(this._deviceIds);
+        }
+
+        this.filter = this.filter.bind(this);
     }
 
     /** @inheritdoc */
     filter(payload) {
-        for (const [siteIdentifier, response] of Object.entries(payload)) {
-            // Filter message based on site.
-            const [account, site] = siteIdentifier.split("|").map(i => +i);
-            if (this._account !== account || this._site !== site) {
-                continue;
-            }
+        const { accountId, siteId, tags } = payload;
 
-            let filteredResponse = response;
+        // Filter message based on site.
+        if (+accountId !== this._account) return null;
+        if (+siteId !== this._site) return null;
+        if (!tags) return null;
 
-            // Filter out devices locations from response that the user
-            // did not subscribe to.
-            if (this._deviceIds) {
-                filteredResponse = response.filter(r =>
-                    this._deviceIds.includes(+r["deviceId"])
-                );
-            }
+        if (!this._deviceIds) return tags;
 
-            return filteredResponse;
-        }
+        const filteredResponse = Object.entries(tags).reduce(
+            (prev, [deviceId, data]) => {
+                if (!this._deviceIds.has(+deviceId)) return prev;
+                return {
+                    ...prev,
+                    [deviceId]: data
+                };
+            },
+            {}
+        );
+
+        return filteredResponse;
     }
 }
 
@@ -147,31 +157,63 @@ export class TagDiffStreamFilter extends BaseFilter {
             site: this._site,
             deviceIds: this._deviceIds
         } = filters);
+
+        if (this._deviceIds) {
+            this._deviceIds = new Set(this._deviceIds);
+        }
+
+        this.filter = this.filter.bind(this);
     }
 
     /** @inheritdoc */
     filter(payload) {
-        let filteredResponse = payload;
-        if (this._deviceIds) {
-            // TODO: Filter removedTags.
-            // Only MAC addresses are received which makes it difficult.
+        const { accountId, siteId, tags, removedTags } = payload;
 
-            // Filter out irrelevant tags.
-            filteredResponse["tags"] = Object.entries(filteredResponse["tags"])
-                .filter(([, data]) => {
-                    const deviceId = data["deviceId"];
-                    return this._deviceIds.includes(+deviceId);
-                })
-                .reduce((obj, [mac, data]) => {
-                    obj[mac] = data;
-                    return obj;
-                }, {});
-        }
+        // Filter message based on site.
+        if (+accountId !== this._account) return null;
+        if (+siteId !== this._site) return null;
+        if (!tags && !removedTags) return null;
 
-        return filteredResponse;
+        // Parse encoded response.
+        if (!this._deviceIds)
+            return {
+                tags,
+                removedTags
+            };
+
+        const filterTags = (prev, [deviceId, data]) => {
+            if (!this._deviceIds.has(+deviceId)) return prev;
+            return {
+                ...prev,
+                [deviceId]: data
+            };
+        };
+
+        // Filter by device ID.
+        const filteredTags = Object.entries(tags).reduce(filterTags, {});
+        const filteredRemovedTags = Object.entries(removedTags).filter(d =>
+            this._deviceIds.has(d)
+        );
+
+        if (!Object.keys(filteredTags).length && !filteredRemovedTags.length)
+            return null;
+
+        return {
+            tags: filteredTags,
+            removedTags: filteredRemovedTags
+        };
     }
 }
 
+// Filter that does nothing special, just passes the message
+// unmodified.
+export class NoOpFilter extends BaseFilter {
+    filter(payload) {
+        return payload;
+    }
+}
+
+// Filter that parses the encoded message.
 export class TagInitialStateFilter extends BaseFilter {
     constructor(filters) {
         super();
@@ -184,25 +226,38 @@ export class TagInitialStateFilter extends BaseFilter {
             site: this._site,
             deviceIds: this._deviceIds
         } = filters);
+
+        if (this._deviceIds) {
+            this._deviceIds = new Set(this._deviceIds);
+        }
+
+        this.filter = this.filter.bind(this);
     }
 
     /** @inheritdoc */
     filter(payload) {
-        let filteredResponse = payload;
+        const { accountId, siteId, data } = payload;
+
+        // Filter message based on site.
+        if (+accountId !== this._account) return null;
+        if (+siteId !== this._site) return null;
+        if (!data) return null;
 
         // Parse encoded response.
-        filteredResponse = parseTagLiveData(filteredResponse);
+        let response = parseTagLiveData(data);
+        if (!this._deviceIds) return response;
 
-        // Apply other filters.
-        if (this._deviceIds) {
-            // Filter out irrelevant tags by ID.
-            filteredResponse = Object.keys(filteredResponse)
-                .filter(k => this._deviceIds.includes(+k))
-                .reduce((obj, key) => {
-                    obj[key] = payload[key];
-                    return obj;
-                }, {});
-        }
+        // Filter by device ID.
+        const filteredResponse = Object.entries(response).reduce(
+            (prev, [deviceId, data]) => {
+                if (!this._deviceIds.has(+deviceId)) return prev;
+                return {
+                    ...prev,
+                    [deviceId]: data
+                };
+            },
+            {}
+        );
 
         return filteredResponse;
     }
