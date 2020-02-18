@@ -3,18 +3,16 @@ import { getToken } from "../../src/rest/authentication";
 import {
     DEV_CLIENT_ID,
     DEV_CLIENT_SECRET,
-    DEV_DOMAIN,
-    waitAsync
+    waitAsync,
+    DEV_AUTH_DOMAIN
 } from "../test-shared";
-
-const DOMAIN = `http://${DEV_DOMAIN}`;
 
 describe("authentication", () => {
     test("should work with correct credentials", async () => {
         const clientId = DEV_CLIENT_ID;
         const clientSecret = DEV_CLIENT_SECRET;
         const { accessToken, tokenExpiration } = await getToken(
-            DOMAIN,
+            DEV_AUTH_DOMAIN,
             clientId,
             clientSecret
         );

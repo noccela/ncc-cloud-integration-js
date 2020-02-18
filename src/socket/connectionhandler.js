@@ -1,7 +1,7 @@
 import { SOCKET_HANDLER_MISSING_ERROR } from "../constants/constants";
 import { getToken } from "../rest/authentication";
 import { ArgumentException } from "../utils/exceptions";
-import { isWsOpen, uuidv4, validateAccountAndSite } from "../utils/utils";
+import { uuidv4, validateAccountAndSite, getWebSocket } from "../utils/utils";
 import { Dependencies } from "./models";
 import { RequestHandler } from "./requesthandler";
 import {
@@ -143,13 +143,14 @@ class RobustWSChannel {
      * @memberof RobustWSChannel
      */
     async close() {
-        if (!isWsOpen(this._socket)) return;
+        if (!this.connected) return;
 
         await new Promise((res, rej) => {
             // Resolve when request handler calls back when socket is closed.
             this._socketHandler.setClosureCallback(() => {
                 res();
                 this._socketHandler = null;
+                this._lastJwtUsed = null;
             });
 
             clearTimeout(this._retryTimeout);
@@ -173,12 +174,17 @@ class RobustWSChannel {
     async connect(jwt) {
         if (!jwt || typeof jwt !== "string") throw Error("Invalid JWT");
 
-        if (this._socket && isWsOpen(this._socket)) return;
+        if (this._socket && this.connected) return;
 
         clearTimeout(this._retryTimeout);
 
         // Create new WebSocket and handler.
-        this._socket = new WebSocket(this._address);
+        const wsConstructor = await getWebSocket();
+
+        this._webSocketStateOpen = wsConstructor.OPEN;
+        this._webSocketStateClosed = wsConstructor.CLOSED;
+
+        this._socket = new wsConstructor(this._address);
 
         this._logger.log(`Connecting to ${this._address}`);
         // Connect to cloud.
@@ -249,7 +255,7 @@ class RobustWSChannel {
         return (
             !!this._socket &&
             !!this._socketHandler &&
-            this._socket.readyState === WebSocket.OPEN
+            this._socket.readyState === this._webSocketStateOpen
         );
     }
 }

@@ -11,14 +11,6 @@ export function uuidv4() {
 }
 
 /**
- * Check if WebSocket is open.
- * @param {WebSocket} ws Websocket object.
- */
-export function isWsOpen(ws) {
-    return ws !== null && ws.readyState === WebSocket.OPEN;
-}
-
-/**
  * Validate account and site id values.
  * @param {number} accountId Account id.
  * @param {number} siteId Site id.
@@ -65,4 +57,20 @@ export function validateOptions(
             }
         }
     }
+}
+
+/**
+ * Check if we are running in NodeJs environment.
+ */
+export function isNodeJs() {
+    return typeof window === "undefined";
+}
+
+/**
+ * Get WebSocket constructor for current environment.
+ */
+export async function getWebSocket() {
+    return await (isNodeJs()
+        ? import("ws").then(wsModule => wsModule.default)
+        : Promise.resolve(WebSocket));
 }

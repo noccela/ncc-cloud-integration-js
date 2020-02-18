@@ -19,6 +19,7 @@
     "devDependencies": {
         "@babel/core": "^7.7.7",
         "@babel/plugin-proposal-optional-chaining": "^7.7.5",
+        "@babel/plugin-syntax-dynamic-import": "^7.8.3",
         "@babel/preset-env": "^7.7.7",
         "@ygoe/msgpack": "^1.0.2",
         "babel-loader": "^8.0.6",
@@ -38,6 +39,7 @@
         "@babel/plugin-proposal-private-methods": "^7.8.3",
         "babel-jest": "^25.1.0",
         "cross-fetch": "^3.0.4",
-        "regenerator-runtime": "^0.13.3"
+        "regenerator-runtime": "^0.13.3",
+        "ws": "^7.2.1"
     }
 }
