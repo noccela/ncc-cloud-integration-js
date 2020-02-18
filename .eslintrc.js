@@ -16,5 +16,11 @@ module.exports = {
         semi: ["error", "always"],
         quotes: ["error", "double"]
     },
-    ignorePatterns: ["node_modules/", "webpack.*.js", "dist/"]
+    ignorePatterns: [
+        "node_modules/",
+        "webpack.*.js",
+        "dist/",
+        "*.test.js",
+        "babel.config.js"
+    ]
 };
