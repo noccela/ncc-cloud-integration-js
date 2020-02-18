@@ -54,7 +54,7 @@ export function parseTagLiveData(msg) {
 
         // Append to result.
         result[tagObj["deviceId"]] = tagObj;
-
-        return result;
     }
+
+    return result;
 }
