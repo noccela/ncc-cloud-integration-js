@@ -35,25 +35,21 @@ export function parseTagLiveData(msg) {
         const tagObj = {
             deviceId: +deviceId
         };
-        tagObj["deviceModel"] = tagData[1];
-        tagObj["name"] = tagData[2];
-        tagObj["batteryVoltage"] = tagData[3];
-        tagObj["batteryStatus"] = tagData[4];
-        tagObj["status"] = tagData[5];
-        tagObj["temperature"] = tagData[6];
-        tagObj["areas"] = tagData[7];
-        tagObj["wire"] = tagData[8];
-        tagObj["reed"] = tagData[9];
-        tagObj["isOnline"] = tagData[10];
-        tagObj["timestamp"] = tagData[11];
-        tagObj["x"] = tagData[12];
-        tagObj["y"] = tagData[13];
-        tagObj["accountId"] = tagData[14];
-        tagObj["siteId"] = tagData[15];
-        tagObj["accelerometer"] = tagData[16];
-        tagObj["floorId"] = tagData[17];
-        tagObj["signalLost"] = tagData[18];
-        tagObj["powerSave"] = tagData[19];
+        tagObj["name"] = tagData[1];
+        tagObj["batteryVoltage"] = tagData[2];
+        tagObj["batteryStatus"] = tagData[3];
+        tagObj["status"] = tagData[4];
+        tagObj["areas"] = tagData[5];
+        tagObj["wire"] = tagData[6];
+        tagObj["reed"] = tagData[7];
+        tagObj["isOnline"] = tagData[8];
+        tagObj["timestamp"] = tagData[9];
+        tagObj["x"] = tagData[10];
+        tagObj["y"] = tagData[11];
+        tagObj["accelerometer"] = tagData[12];
+        tagObj["floorId"] = tagData[13];
+        tagObj["signalLost"] = tagData[14];
+        tagObj["powerSave"] = tagData[15];
 
         // Append to result.
         result[tagObj["deviceId"]] = tagObj;
