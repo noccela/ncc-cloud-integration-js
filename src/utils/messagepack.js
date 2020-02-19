@@ -1,4 +1,7 @@
 import { deserialize } from "@ygoe/msgpack";
+import { getAtob } from "./ponyfills";
+
+const atob = getAtob();
 
 /**
  * Parse and decode Base64 encoded MsgPack message from cloud.

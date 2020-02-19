@@ -1,7 +1,7 @@
 import { SOCKET_HANDLER_MISSING_ERROR } from "../constants/constants";
 import { getToken } from "../rest/authentication";
 import { ArgumentException } from "../utils/exceptions";
-import { uuidv4, validateAccountAndSite, getWebSocket } from "../utils/utils";
+import { uuidv4, validateAccountAndSite } from "../utils/utils";
 import { Dependencies } from "./models";
 import { RequestHandler } from "./requesthandler";
 import {
@@ -9,6 +9,7 @@ import {
     connectWebsocket,
     scheduleReconnection
 } from "./socketutils";
+import { getWebSocket } from "../utils/ponyfills";
 
 /**
  * Encloses a RequestHandler and provides additional 'robustness'

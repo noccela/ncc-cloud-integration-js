@@ -65,12 +65,3 @@ export function validateOptions(
 export function isNodeJs() {
     return typeof window === "undefined";
 }
-
-/**
- * Get WebSocket constructor for current environment.
- */
-export async function getWebSocket() {
-    return await (isNodeJs()
-        ? import("ws").then(wsModule => wsModule.default)
-        : Promise.resolve(WebSocket));
-}
