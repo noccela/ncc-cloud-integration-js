@@ -81,14 +81,6 @@
             let asd = null,
                 asd2 = null;
             setTimeout(async () => {
-                // const {
-                //     accessToken
-                // } = await NccIntegration.authentication.getToken(
-                //     "http://auth.samuel.noccela.xyz",
-                //     5662,
-                //     "gZ24oMIPpD4v97N1nv9GnDLcTPpY2hV9"
-                // );
-
                 // Create NCC websocket object.
                 const ncc = new NccIntegration.EventChannel(
                     "ws://partner.samuel.noccela.xyz"
@@ -110,13 +102,16 @@
                     console.log(JSON.stringify(payload));
                 }
 
+                await ncc.registerInitialTagState(callback, 1, 1);
+
                 // Register the callback and filtering information.
                 await ncc.registerTagDiffStream(
                     callback,
                     1, // Account
-                    1, // Sitex
-                    [1000500916] // Additional filters, like device ids.
+                    1 // Site
                 );
+
+                await ncc.registerLocationUpdate(callback, 1, 1);
             }, 1000);
         </script>
     </body>
