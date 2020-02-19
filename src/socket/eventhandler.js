@@ -116,7 +116,7 @@ export class EventChannel {
      * @preserve
      */
     async connect(jwt) {
-        return this._connection.connect(jwt);
+        await this._connection.connect(jwt);
     }
 
     /**
@@ -152,6 +152,19 @@ export class EventChannel {
         this._registeredEvents = {};
     }
 
+    /**
+     * Register to live updates for tags' locations ona given site.
+     *
+     * This is a lightweight event and the most correct to use when only
+     * location of the tags is concerned as it avoid unnecessary use of
+     * bandwidth.
+     *
+     * @param {(err: String, payload: Object) => void} callback
+     * @param {Number} account
+     * @param {Number} site
+     * @param {Number[]} [deviceIds] Devices to get updates for. If null then
+     * all devides from the site.
+     */
     async registerLocationUpdate(callback, account, site, deviceIds = null) {
         return this.register(
             EVENT_TYPES["LOCATION_UPDATE"],
@@ -164,6 +177,20 @@ export class EventChannel {
         );
     }
 
+    /**
+     * Register to initial full state for tags on a given site.
+     *
+     * The callback will be invoked when first registered and when the connection
+     * is re-established. Otherwise updates are tracked via incremental updates.
+     *
+     * To get the full state whenever you want, use @see{EventChannel#getTagState}.
+     *
+     * @param {(err: String, payload: Object) => void} callback
+     * @param {Number} account
+     * @param {Number} site
+     * @param {Number[]} [deviceIds] Devices to get updates for. If null then
+     * all devides from the site.
+     */
     async registerInitialTagState(callback, account, site, deviceIds = null) {
         return this.register(
             EVENT_TYPES["TAG_STATE"],
@@ -176,6 +203,15 @@ export class EventChannel {
         );
     }
 
+    /**
+     * Register to incremental updates for tags' state on a given site.
+     *
+     * @param {(err: String, payload: Object) => void} callback
+     * @param {Number} account
+     * @param {Number} site
+     * @param {Number[]} [deviceIds] Devices to get updates for. If null then
+     * all devides from the site.
+     */
     async registerTagDiffStream(callback, account, site, deviceIds = null) {
         return this.register(
             EVENT_TYPES["TAG_DIFF"],
@@ -215,6 +251,9 @@ export class EventChannel {
         let registeredResponseType = null;
         let unregisterRequest = null;
 
+        // Set default filter object.
+        filters = filters || {};
+
         const combinedFilters = {
             ...filters,
             account,
@@ -242,7 +281,7 @@ export class EventChannel {
                 const locationUpdateRequest = {
                     accountId: account,
                     siteId: site,
-                    action: "tagLocationRequest",
+                    action: "registerTagLocation",
                     payload: filters
                 };
 
@@ -273,7 +312,7 @@ export class EventChannel {
                 const tagChangeRequest = {
                     accountId: account,
                     siteId: site,
-                    action: "registerToTagChangeStream",
+                    action: "registerTagDiffStream",
                     payload: filters
                 };
                 await this._connection.sendRequest(uuid, tagChangeRequest);
@@ -340,7 +379,7 @@ export class EventChannel {
             {
                 accountId: account,
                 siteId: site,
-                action: "getInitialTagState",
+                action: "initialTagState",
                 payload: {
                     deviceIds
                 }

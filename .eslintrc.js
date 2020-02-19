@@ -21,6 +21,7 @@ module.exports = {
         "webpack.*.js",
         "dist/",
         "*.test.js",
-        "babel.config.js"
+        "babel.config.js",
+        "*.config.js"
     ]
 };
