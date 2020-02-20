@@ -67,6 +67,8 @@ Clients are authenticated using JWT token, sent either as _Bearer_ token in _Aut
 
 Token is requested from OAuth2 authentication server using _client credentials_ flow. The client id and secret are received when partner registers third party application in _Partner portal_.
 
+Token has an expiration time, after which the socket will be closed. This token can be refreshed on the fly automatically by creating the connection with _connectPersistent_ instead of _connect_ and providing the client ID and client secret. This however means that these values will be cached.
+
 Check examples for how to do it using this library.
 
 ## Examples
@@ -96,6 +98,15 @@ const channel = new Ncc.EventChannel({
 await channel.connect(accessToken);
 
 // Authenticated connection is available.
+```
+
+Connect with a persistent connection that is automatically re-authenticated when
+token has less than half of its time left.
+
+```javascript
+await channel.connectPersistent(clientId, clientSecret);
+
+// Authenticated connection is available "forever". Otherwise works just the same.
 ```
 
 Subscribe to location updates.
@@ -130,6 +141,28 @@ Unregistering from a registered event using the UUID.
 ```javascript
 const uuid = ...;
 await channel.unregister(uuid);
+```
+
+Close the channel and underlying socket
+
+```javascript
+await channel.close();
+```
+
+Custom loggers
+
+```javascript
+const channel = new Ncc.EventChannel({
+    loggers: [], // Don't log anything from library.
+    loggers: [ // Custom logger.
+        {
+            log: msg => {},
+            warn: msg => {},
+            error: msg => {},
+            exception: msg => {}
+        }
+    ]
+});
 ```
 
 ## Events
