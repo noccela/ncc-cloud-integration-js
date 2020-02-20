@@ -1,5 +1,5 @@
 import fetch from "cross-fetch";
-import { AUTH_TOKEN_ENDPOINT } from "../constants/paths";
+import { AUTH_TOKEN_ENDPOINT, DEFAULT_AUTH_DOMAIN } from "../constants/paths";
 import { ArgumentException } from "../utils/exceptions";
 
 /**
@@ -16,11 +16,15 @@ import { ArgumentException } from "../utils/exceptions";
  *
  * The OAuth flow used is client credentials.
  *
- * @param {string} domain Base domain for authentication server, without path.
  * @param {number} clientId Client if for registered app.
  * @param {string} clientSecret Client secret for app.
+ * @param {string} domain Base domain for authentication server, without path.
  */
-export async function getToken(domain, clientId, clientSecret) {
+export async function getToken(
+    clientId,
+    clientSecret,
+    domain = DEFAULT_AUTH_DOMAIN
+) {
     if (!domain || !domain.startsWith("http")) {
         throw new ArgumentException("domain");
     }

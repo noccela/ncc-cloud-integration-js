@@ -1,6 +1,6 @@
 import "regenerator-runtime/runtime";
 import { DEFAULT_OPTIONS, EVENT_TYPES } from "../constants/constants";
-import { NCC_PATHS } from "../constants/paths";
+import { NCC_PATHS, DEFAULT_API_DOMAIN } from "../constants/paths";
 import {
     uuidv4,
     validateAccountAndSite,
@@ -30,16 +30,16 @@ import { Dependencies, RegisteredEvent } from "./models";
 export class EventChannel {
     /**
      * Creates an instance of EventChannel.
-     * @param {string} domain Domain for the backend.
      * @param {import("../constants/constants").GlobalOptions} [userOptions={}]
      * User-provided options that override defaults.
+     * @param {string} domain Domain for the backend.
      * @memberof EventChannel
      * @preserve
      */
-    constructor(domain, userOptions = {}) {
+    constructor(userOptions = {}, domain = DEFAULT_API_DOMAIN) {
         // Build the complete WS endpoint address.
         /** @type {string} */
-        const address = new URL(NCC_PATHS["REALTIME_API"], domain).href;
+        const address = new URL(NCC_PATHS["'REALTIME_API"], domain).href;
 
         // Combine default options with provided ones.
         /** @type {import("../constants/constants").GlobalOptions} */

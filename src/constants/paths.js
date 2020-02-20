@@ -8,3 +8,7 @@ export const AUTH_TOKEN_ENDPOINT = "/connect/token";
 export const NCC_PATHS = {
     REALTIME_API: `${PARTNER_API_BASE}/realtime`
 };
+
+export const DEFAULT_API_DOMAIN = "wss://partner.noccela.com";
+
+export const DEFAULT_AUTH_DOMAIN = "https://auth.noccela.com";
