@@ -174,11 +174,10 @@ export class TagDiffStreamFilter extends BaseFilter {
         if (+siteId !== this._site) return null;
         if (!tags && !removedTags) return null;
 
-        // Parse encoded response.
         if (!this._deviceIds)
             return {
                 tags,
-                removedTags
+                removedTags: removedTags
             };
 
         const filterTags = (prev, [deviceId, data]) => {
@@ -191,11 +190,20 @@ export class TagDiffStreamFilter extends BaseFilter {
 
         // Filter by device ID.
         const filteredTags = Object.entries(tags).reduce(filterTags, {});
-        const filteredRemovedTags = Object.entries(removedTags).filter(d =>
-            this._deviceIds.has(d)
-        );
 
-        if (!Object.keys(filteredTags).length && !filteredRemovedTags.length)
+        let filteredRemovedTags = null;
+
+        // removedTags can be null or undefined.
+        if (removedTags) {
+            filteredRemovedTags = Object.entries(removedTags).filter(d =>
+                this._deviceIds.has(d)
+            );
+        }
+
+        if (
+            !Object.keys(filteredTags).length &&
+            (!filteredRemovedTags || !filteredRemovedTags.length)
+        )
             return null;
 
         return {
