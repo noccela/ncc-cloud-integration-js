@@ -57,7 +57,7 @@
             }
 
             const consoleLog = window.console.log;
-            const consoleWarning = window.console.log;
+            const consoleWarning = window.console.warn;
             const consoleError = window.console.error;
             const consoleException = window.console.exception;
             const consoleDebug = window.console.debug;
@@ -66,7 +66,7 @@
                 addMessage(msg[0], 0) && consoleLog(...msg);
             window.console.debug = (...msg) =>
                 addMessage(msg[0], 0) && consoleDebug(...msg);
-            window.console.warning = (...msg) =>
+            window.console.warn = (...msg) =>
                 addMessage(msg[0], 1) && consoleWarning(...msg);
             window.console.error = (...msg) =>
                 addMessage(msg[0], 2) && consoleError(...msg);
@@ -78,11 +78,9 @@
         <script src="main.min.js"></script>
 
         <script>
-            let asd = null,
-                asd2 = null;
             setTimeout(async () => {
                 // Create NCC websocket object.
-                const ncc = new NccIntegration.EventChannel(
+                window.ncc = new NccIntegration.EventChannel(
                     "ws://partner.samuel.noccela.xyz"
                 );
 
@@ -102,16 +100,24 @@
                     console.log(JSON.stringify(payload));
                 }
 
-                await ncc.registerInitialTagState(callback, 1, 1);
+                window.event1 = await ncc.registerInitialTagState(
+                    callback,
+                    1,
+                    1
+                );
 
                 // Register the callback and filtering information.
-                await ncc.registerTagDiffStream(
+                window.event2 = await ncc.registerLocationUpdate(
                     callback,
                     1, // Account
                     1 // Site
                 );
 
-                await ncc.registerLocationUpdate(callback, 1, 1);
+                window.event3 = await ncc.registerLocationUpdate(
+                    callback,
+                    1, // Account
+                    1 // Site
+                );
             }, 1000);
         </script>
     </body>

@@ -8,7 +8,6 @@ export class RegisteredEvent {
      * @param {string} responseType
      * @param {(err: string, payload: Object) => void} callback
      * @param {Object[]} args
-     * @param {Boolean} unregisterFromHandler
      */
     constructor(eventType, responseType, callback, args, unregisterRequest) {
         this._eventType = eventType;
@@ -16,6 +15,15 @@ export class RegisteredEvent {
         this._callback = callback;
         this._args = args;
         this._unregisterRequest = unregisterRequest;
+        this._failedAttempts = 0;
+    }
+
+    get failedAttempts() {
+        return this._failedAttempts;
+    }
+
+    set failedAttempts(value) {
+        this._failedAttempts = value;
     }
 
     get eventType() {

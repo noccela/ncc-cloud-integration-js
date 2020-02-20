@@ -65,3 +65,13 @@ export function validateOptions(
 export function isNodeJs() {
     return typeof window === "undefined";
 }
+
+/**
+ * Wait asynchronously.
+ * @param {Number} ms Milliseconds until promise is resolved.
+ */
+export async function waitAsync(ms) {
+    await new Promise(res => {
+        setTimeout(res, ms);
+    });
+}

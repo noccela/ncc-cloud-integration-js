@@ -35,7 +35,9 @@ export const DEFAULT_OPTIONS = {
     requestTimeout: 60000,
     automaticTokenRenewal: true,
     tokenRefreshFailureRetryTimeout: 60000,
-    useWebWorkers: true
+    useWebWorkers: true,
+    registrationAttemptsUntilIgnored: 50,
+    waitForFailedReRegistration: 1000
 };
 
 export const SOCKET_HANDLER_MISSING_ERROR =
@@ -73,4 +75,8 @@ export const SOCKET_HANDLER_MISSING_ERROR =
  * fetching new token fails
  * @prop {Boolean} [useWebWorkers] - Handle socket and filtering in web worker if
  * they are available
+ * @prop {Number} [registrationAttemptsUntilIgnored] - How many times event will
+ * be attempted to be re-registered until it is ditched completely.
+ * * @prop {Number} [waitForFailedReRegistration] - Time to wait in case a re-
+ * registration of event fails between attempts.
  */

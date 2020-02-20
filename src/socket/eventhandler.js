@@ -4,7 +4,8 @@ import { NCC_PATHS } from "../constants/paths";
 import {
     uuidv4,
     validateAccountAndSite,
-    validateOptions
+    validateOptions,
+    waitAsync
 } from "../utils/utils";
 import { RobustAuthenticatedWSChannel } from "./connectionhandler";
 import {
@@ -89,21 +90,45 @@ export class EventChannel {
 
     // Handle event re-registration after broken connection is fixed.
     async _reregisterEvents() {
-        // Re-register events.
-        const oldEntries = Object.entries(this._registeredEvents);
-        for (const [, data] of oldEntries) {
-            const { args } = data;
+        // Get events to be registered with new connection.
+        const oldEntries = Object.values(this._registeredEvents);
 
-            // Remove old registrations.
-            this._registeredEvents = {};
+        // Remove old registrations.
+        this._registeredEvents = {};
+
+        for (const oldEventData of oldEntries) {
+            const { eventType, args } = oldEventData;
 
             try {
                 // Register the event using same arguments as before.
                 // @ts-ignore
                 await this.register(...args);
             } catch (e) {
-                // TODO: What should happen in this situation?
-                this._logger.exception("Error while re-registering event", e);
+                this._logger.exception(
+                    `Error while re-registering event ${eventType}`,
+                    e
+                );
+
+                oldEventData.failedAttempts++;
+                const maxFailedAttempts = this._options
+                    .registrationAttemptsUntilIgnored;
+                if (
+                    !maxFailedAttempts ||
+                    oldEventData.failedAttempts <=
+                        this._options.registrationAttemptsUntilIgnored
+                ) {
+                    // Add a little delay in case socket is broken so it might be
+                    // resolved the next time we try. Otherwise we might loop quickly
+                    // and almost immediately ditch the event.
+                    await waitAsync(this._options.waitForFailedReRegistration);
+
+                    // Push the same entry to the back of the array so it will be attempted again.
+                    oldEntries.push(oldEventData);
+                } else {
+                    this._logger.error(
+                        `Failed to re-register ${eventType} ${oldEventData.failedAttempts} times, giving up`
+                    );
+                }
             }
         }
     }
@@ -349,6 +374,32 @@ export class EventChannel {
 
         this._logger.log(`Registered event ${eventType}`);
 
+        // TODO: Do away with this in backend! Should be valid to have two
+        // identical events registered.
+        {
+            // Warn if user creates two events with identical filters,
+            // because of how backend does filtering unregistering removes
+            // all events with that filter.
+            const filtersSerialized = JSON.stringify(filters);
+            const identicalEntries = Object.entries(this._registeredEvents)
+                .filter(
+                    ([_, values]) =>
+                        values.eventType === eventType &&
+                        JSON.stringify(values.args[3]) === filtersSerialized
+                )
+                .map(([uuid, _]) => uuid);
+
+            if (identicalEntries && identicalEntries.length) {
+                this._logger.warn(
+                    `Multiple events with identical types and filters added! ` +
+                        `Currently if one of these is unregistered they are all ` +
+                        `unregisted! Events: ${JSON.stringify(
+                            identicalEntries
+                        )}`
+                );
+            }
+        }
+
         // Track the event so it can be unregistered or re-registered if socket
         // is re-established.
         this._registeredEvents[uuid] = new RegisteredEvent(
@@ -414,15 +465,6 @@ export class EventChannel {
         const responseType = event.responseType;
         const unregisterRequest = event.unregisterRequest;
 
-        delete this._registeredEvents[uuid];
-
-        // Unregister from handler, if it exists.
-        // No handler means the socket is temporarily down, no need to
-        // unregister from cloud as new connection will just not re-register it.
-        if (this._connection) {
-            this._connection.unregisterServerCallback(responseType, uuid);
-        }
-
         if (unregisterRequest) {
             // Send an unregistration request to backend.
             if (this._connection) {
@@ -434,6 +476,15 @@ export class EventChannel {
                     );
                 }
             }
+        }
+
+        delete this._registeredEvents[uuid];
+
+        // Unregister from handler, if it exists.
+        // No handler means the socket is temporarily down, no need to
+        // unregister from cloud as new connection will just not re-register it.
+        if (this._connection) {
+            this._connection.unregisterServerCallback(responseType, uuid);
         }
 
         this._logger.log(`Unregistered event ${eventType} with UUID ${uuid}`);
