@@ -1,6 +1,10 @@
 import "regenerator-runtime/runtime";
 import { DEFAULT_OPTIONS, EVENT_TYPES } from "../constants/constants";
-import { NCC_PATHS, DEFAULT_API_DOMAIN } from "../constants/paths";
+import {
+    NCC_PATHS,
+    DEFAULT_API_DOMAIN,
+    DEFAULT_AUTH_DOMAIN
+} from "../constants/paths";
 import {
     uuidv4,
     validateAccountAndSite,
@@ -39,7 +43,7 @@ export class EventChannel {
     constructor(userOptions = {}, domain = DEFAULT_API_DOMAIN) {
         // Build the complete WS endpoint address.
         /** @type {string} */
-        const address = new URL(NCC_PATHS["'REALTIME_API"], domain).href;
+        const address = new URL(NCC_PATHS["REALTIME_API"], domain).href;
 
         // Combine default options with provided ones.
         /** @type {import("../constants/constants").GlobalOptions} */
@@ -149,14 +153,18 @@ export class EventChannel {
      * one go. Also automatically schedules new token retrieval if 'automaticTokenRenewal'
      * is true in options.
      *
-     * @param {string} authServerDomain Authentication server domain.
      * @param {number} clientId Client ID to authenticate with.
      * @param {string} clientSecret Client secret.
+     * @param {string} authServerDomain Authentication server domain.
      * @returns {Promise} Promise that resolves when connection is established.
      * @memberof EventChannel
      * @preserve
      */
-    async connectPersistent(authServerDomain, clientId, clientSecret) {
+    async connectPersistent(
+        clientId,
+        clientSecret,
+        authServerDomain = DEFAULT_AUTH_DOMAIN
+    ) {
         return this._connection.createAuthenticatedConnection(
             authServerDomain,
             clientId,

@@ -396,9 +396,9 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
         clientSecret
     ) {
         const { accessToken: token } = await getToken(
-            authServerDomain,
             clientId,
-            clientSecret
+            clientSecret,
+            authServerDomain
         );
 
         const { tokenExpiration, tokenIssued } = await this.connect(token);
