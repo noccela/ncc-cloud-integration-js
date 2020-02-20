@@ -69,16 +69,6 @@ Token is requested from OAuth2 authentication server using _client credentials_ 
 
 Check examples for how to do it using this library.
 
-## Events
-
-Currently there are three types of high-level _events_.
-
-```
-LOCATION_UPDATE -> real-time updates to tag locations (coordinates)
-TAG_STATE -> initial tag state, retrieved only once (or after reconnecting)
-TAG_DIFF -> updates to tags' state, same data as in initial state but only changed values
-```
-
 ## Examples
 
 Fetch token with _client id_ and _client secret_.
