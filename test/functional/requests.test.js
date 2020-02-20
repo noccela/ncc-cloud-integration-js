@@ -12,11 +12,11 @@ describe("requesting cloud", () => {
     let ncc;
 
     beforeEach(async () => {
-        ncc = new EventChannel(DEV_API_DOMAIN);
+        ncc = new EventChannel(null, DEV_API_DOMAIN);
         const { accessToken } = await getToken(
-            DEV_AUTH_DOMAIN,
             DEV_CLIENT_ID,
-            DEV_CLIENT_SECRET
+            DEV_CLIENT_SECRET,
+            DEV_AUTH_DOMAIN
         );
         await ncc.connect(accessToken);
     });

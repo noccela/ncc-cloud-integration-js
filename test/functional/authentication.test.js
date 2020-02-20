@@ -12,9 +12,9 @@ describe("authentication", () => {
         const clientId = DEV_CLIENT_ID;
         const clientSecret = DEV_CLIENT_SECRET;
         const { accessToken, tokenExpiration } = await getToken(
-            DEV_AUTH_DOMAIN,
             clientId,
-            clientSecret
+            clientSecret,
+            DEV_AUTH_DOMAIN
         );
 
         expect(accessToken).toBeDefined();
@@ -29,7 +29,7 @@ describe("authentication", () => {
         const {
             accessToken: accessToken1,
             tokenExpiration: tokenExpiration1
-        } = await getToken(DEV_AUTH_DOMAIN, clientId, clientSecret);
+        } = await getToken(clientId, clientSecret, DEV_AUTH_DOMAIN);
 
         expect(accessToken1).toBeDefined();
         expect(tokenExpiration1).toBeDefined();
@@ -39,7 +39,7 @@ describe("authentication", () => {
         const {
             accessToken: accessToken2,
             tokenExpiration: tokenExpiration2
-        } = await getToken(DEV_AUTH_DOMAIN, clientId, clientSecret);
+        } = await getToken(clientId, clientSecret, DEV_AUTH_DOMAIN);
 
         expect(accessToken2).toBeDefined();
         expect(tokenExpiration2).toBeDefined();
@@ -49,15 +49,15 @@ describe("authentication", () => {
 
     test("should fail for invalid credentials", async () => {
         await expect(
-            getToken(DEV_AUTH_DOMAIN, DEV_CLIENT_ID, "hunter2")
+            getToken(DEV_CLIENT_ID, "hunter2", DEV_AUTH_DOMAIN)
         ).rejects.toThrow("failed");
 
         await expect(
-            getToken(DEV_AUTH_DOMAIN, "asdf", DEV_CLIENT_SECRET)
+            getToken("asdf", DEV_CLIENT_SECRET, DEV_AUTH_DOMAIN)
         ).rejects.toThrow("Invalid argument");
 
         await expect(
-            getToken(DEV_AUTH_DOMAIN, 1234, DEV_CLIENT_SECRET)
+            getToken(1234, DEV_CLIENT_SECRET, DEV_AUTH_DOMAIN)
         ).rejects.toThrow("failed");
     });
 });

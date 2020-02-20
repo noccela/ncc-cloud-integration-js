@@ -17,11 +17,11 @@ describe("registering to events", () => {
 
     beforeEach(async () => {
         const { accessToken } = await getToken(
-            DEV_AUTH_DOMAIN,
             DEV_CLIENT_ID,
-            DEV_CLIENT_SECRET
+            DEV_CLIENT_SECRET,
+            DEV_AUTH_DOMAIN
         );
-        const eventChannel = new EventChannel(DEV_API_DOMAIN);
+        const eventChannel = new EventChannel(null, DEV_API_DOMAIN);
         await eventChannel.connect(accessToken);
         ncc = eventChannel;
     });
