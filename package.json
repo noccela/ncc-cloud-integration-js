@@ -9,7 +9,8 @@
         "dist/**/*.js"
     ],
     "scripts": {
-        "test": "jest",
+        "test": "exit 1",
+        "functionaltest": "npx jest \".\\\\test\\\\functional\\\\.*.js\"",
         "start": "npx webpack-dev-server --config webpack.dev.js",
         "build": "npx webpack --config webpack.prod.js",
         "lint": "npx tsc -p . --noEmit"
