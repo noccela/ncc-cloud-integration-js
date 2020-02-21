@@ -1,5 +1,5 @@
-import { deserialize } from "@ygoe/msgpack";
-import { getAtob } from "./ponyfills";
+import msgpack from "@ygoe/msgpack";
+import { getAtob } from "./ponyfills.js";
 
 const atob = getAtob();
 
@@ -17,7 +17,7 @@ export function parseMsgPack(baseMsg) {
         intArray[i] = bytes.charCodeAt(i);
     }
 
-    const payload = deserialize(intArray);
+    const payload = msgpack.deserialize(intArray);
     return payload;
 }
 

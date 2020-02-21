@@ -8,7 +8,7 @@ const TerserPlugin = require("terser-webpack-plugin");
 module.exports = {
     entry: {
         // "main": "./src/index.js",
-        "main.min": "./src/index.js"
+        "ncc.min": "./src/index-wp.js"
     },
     output: {
         filename: "[name].js",
@@ -20,7 +20,7 @@ module.exports = {
     optimization: {
         minimizer: [
             new TerserPlugin({
-                include: /main\.js$/,
+                include: /ncc\.js$/,
                 extractComments: false,
                 terserOptions: {
                     mangle: true,
@@ -32,7 +32,7 @@ module.exports = {
             }),
             new TerserPlugin({
                 // Minify only the minified module.
-                include: /main\.min\.js$/,
+                include: /ncc\.min\.js$/,
                 extractComments: false
             })
         ]
@@ -45,7 +45,7 @@ module.exports = {
                 use: {
                     loader: "babel-loader",
                     // Use common babel config.
-                    options: require("./babel.config")
+                    options: require("./babel.config.cjs")
                 }
             }
         ]

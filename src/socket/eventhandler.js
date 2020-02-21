@@ -1,24 +1,23 @@
-import "regenerator-runtime/runtime";
-import { DEFAULT_OPTIONS, EVENT_TYPES } from "../constants/constants";
+import { DEFAULT_OPTIONS, EVENT_TYPES } from "../constants/constants.js";
 import {
     NCC_PATHS,
     DEFAULT_API_DOMAIN,
     DEFAULT_AUTH_DOMAIN
-} from "../constants/paths";
+} from "../constants/paths.js";
 import {
     getUniqueId,
     validateAccountAndSite,
     validateOptions,
     waitAsync
-} from "../utils/utils";
-import { RobustAuthenticatedWSChannel } from "./connectionhandler";
+} from "../utils/utils.js";
+import { RobustAuthenticatedWSChannel } from "./connectionhandler.js";
 import {
     getFilteredCallback,
     TagInitialStateFilter,
     LocationUpdateFilter,
     TagDiffStreamFilter
-} from "./filters";
-import { Dependencies, RegisteredEvent } from "./models";
+} from "./filters.js";
+import { Dependencies, RegisteredEvent } from "./models.js";
 
 /**
  * Class that encloses a connection to Noccela's backend and provides high-level
@@ -53,12 +52,15 @@ export class EventChannel {
         // Create logger functions that call all registered loggers.
         /** @type {import("../constants/constants").Logger} */
         const logger = {
-            log: (...objs) => options.loggers.forEach(l => l?.log(...objs)),
-            warn: (...objs) => options.loggers.forEach(l => l?.warn(...objs)),
-            error: (...objs) => options.loggers.forEach(l => l?.error(...objs)),
+            log: (...objs) => options.loggers.forEach(l => l && l.log(...objs)),
+            warn: (...objs) =>
+                options.loggers.forEach(l => l && l.warn(...objs)),
+            error: (...objs) =>
+                options.loggers.forEach(l => l && l.error(...objs)),
             exception: (...objs) =>
-                options.loggers.forEach(l => l?.exception(...objs)),
-            debug: (...objs) => options.loggers.forEach(l => l?.debug(...objs))
+                options.loggers.forEach(l => l && l.exception(...objs)),
+            debug: (...objs) =>
+                options.loggers.forEach(l => l && l.debug(...objs))
         };
         this._logger = logger;
 
@@ -307,81 +309,90 @@ export class EventChannel {
 
         switch (eventType) {
             case EVENT_TYPES["LOCATION_UPDATE"]:
-                validateOptions(filters, ["deviceIds"], null);
-                registeredResponseType = "locationUpdate";
+                {
+                    validateOptions(filters, ["deviceIds"], null);
+                    registeredResponseType = "locationUpdate";
 
-                const filteredLocationUpdateCallback = getFilteredCallback(
-                    LocationUpdateFilter,
-                    callback,
-                    combinedFilters,
-                    this._dependencyContainer
-                );
+                    const filteredLocationUpdateCallback = getFilteredCallback(
+                        LocationUpdateFilter,
+                        callback,
+                        combinedFilters,
+                        this._dependencyContainer
+                    );
 
-                this._connection.registerServerCallback(
-                    registeredResponseType,
-                    uuid,
-                    filteredLocationUpdateCallback
-                );
+                    this._connection.registerServerCallback(
+                        registeredResponseType,
+                        uuid,
+                        filteredLocationUpdateCallback
+                    );
 
-                const locationUpdateRequest = {
-                    accountId: account,
-                    siteId: site,
-                    action: "registerTagLocation",
-                    payload: filters
-                };
+                    const locationUpdateRequest = {
+                        accountId: account,
+                        siteId: site,
+                        action: "registerTagLocation",
+                        payload: filters
+                    };
 
-                await this._connection.sendRequest(uuid, locationUpdateRequest);
-                unregisterRequest = {
-                    ...locationUpdateRequest,
-                    action: "unregisterTagLocation"
-                };
+                    await this._connection.sendRequest(
+                        uuid,
+                        locationUpdateRequest
+                    );
+                    unregisterRequest = {
+                        ...locationUpdateRequest,
+                        action: "unregisterTagLocation"
+                    };
+                }
 
                 break;
             case EVENT_TYPES["TAG_DIFF"]:
-                validateOptions(filters, ["deviceIds"], null);
-                registeredResponseType = "tagDiffStream";
+                {
+                    validateOptions(filters, ["deviceIds"], null);
+                    registeredResponseType = "tagDiffStream";
 
-                const filteredTagDiffCallback = getFilteredCallback(
-                    TagDiffStreamFilter,
-                    callback,
-                    combinedFilters,
-                    this._dependencyContainer
-                );
+                    const filteredTagDiffCallback = getFilteredCallback(
+                        TagDiffStreamFilter,
+                        callback,
+                        combinedFilters,
+                        this._dependencyContainer
+                    );
 
-                this._connection.registerServerCallback(
-                    registeredResponseType,
-                    uuid,
-                    filteredTagDiffCallback
-                );
+                    this._connection.registerServerCallback(
+                        registeredResponseType,
+                        uuid,
+                        filteredTagDiffCallback
+                    );
 
-                const tagChangeRequest = {
-                    accountId: account,
-                    siteId: site,
-                    action: "registerTagDiffStream",
-                    payload: filters
-                };
-                await this._connection.sendRequest(uuid, tagChangeRequest);
-                unregisterRequest = {
-                    ...tagChangeRequest,
-                    action: "unregisterTagDiffStream"
-                };
+                    const tagChangeRequest = {
+                        accountId: account,
+                        siteId: site,
+                        action: "registerTagDiffStream",
+                        payload: filters
+                    };
+                    await this._connection.sendRequest(uuid, tagChangeRequest);
+                    unregisterRequest = {
+                        ...tagChangeRequest,
+                        action: "unregisterTagDiffStream"
+                    };
+                }
 
                 break;
             case EVENT_TYPES["TAG_STATE"]:
-                validateOptions(filters, ["deviceIds"], null);
-                registeredResponseType = "initialTagState";
+                {
+                    validateOptions(filters, ["deviceIds"], null);
+                    registeredResponseType = "initialTagState";
 
-                const initialResponse = await this.getTagState(
-                    account,
-                    site,
-                    filters["deviceIds"]
-                );
+                    const initialResponse = await this.getTagState(
+                        account,
+                        site,
+                        filters["deviceIds"]
+                    );
 
-                // Register to future tag state messages.
-                // New is sent when for example socket is re-established.
-                registeredResponseType = "initialTagState";
+                    // Register to future tag state messages.
+                    // New is sent when for example socket is re-established.
+                    registeredResponseType = "initialTagState";
 
-                callback(null, initialResponse);
+                    callback(null, initialResponse);
+                }
 
                 break;
             default:
@@ -403,16 +414,16 @@ export class EventChannel {
             const filtersSerialized = JSON.stringify(filters);
             const identicalEntries = Object.entries(this._registeredEvents)
                 .filter(
-                    ([_, values]) =>
+                    ([, values]) =>
                         values.eventType === eventType &&
                         JSON.stringify(values.args[3]) === filtersSerialized
                 )
-                .map(([uuid, _]) => uuid);
+                .map(([uuid]) => uuid);
 
             if (identicalEntries && identicalEntries.length) {
                 this._logger.warn(
-                    `Multiple events with identical types and filters added! ` +
-                        `Currently if one of these is unregistered they are all ` +
+                    "Multiple events with identical types and filters added! " +
+                        "Currently if one of these is unregistered they are all " +
                         `unregisted! Events: ${JSON.stringify(
                             identicalEntries
                         )}`

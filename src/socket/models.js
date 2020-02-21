@@ -1,4 +1,4 @@
-import { ArgumentException } from "../utils/exceptions";
+import { ArgumentException } from "../utils/exceptions.js";
 
 // Internal registration for event, for tracking the event and allowing
 // it to be unregistered later.

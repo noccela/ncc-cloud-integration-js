@@ -10,9 +10,18 @@ export function connectWebsocket(socket) {
             resolve();
         };
 
+        socket.onerror = err => {
+            socket.onopen = null;
+            socket.onclose = null;
+            socket.onerror = null;
+            // @ts-ignore
+            reject(`Error while connecting: '${err.message}'`);
+        };
+
         socket.onclose = ev => {
             socket.onopen = null;
             socket.onclose = null;
+            socket.onerror = null;
             const code = ev.code;
             const reason = ev.reason;
             reject(

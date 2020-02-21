@@ -1,6 +1,9 @@
 import fetch from "cross-fetch";
-import { AUTH_TOKEN_ENDPOINT, DEFAULT_AUTH_DOMAIN } from "../constants/paths";
-import { ArgumentException } from "../utils/exceptions";
+import {
+    AUTH_TOKEN_ENDPOINT,
+    DEFAULT_AUTH_DOMAIN
+} from "../constants/paths.js";
+import { ArgumentException } from "../utils/exceptions.js";
 
 /**
  * Fetch a fresh JWT access token from Noccela's OAuth2 authentication server.

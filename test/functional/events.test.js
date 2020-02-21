@@ -1,6 +1,4 @@
-// TODO: For some reason beforeEach is not run before the tests, which causes
-// tests to randomly fail.
-
+import "regenerator-runtime/runtime";
 import { getToken } from "../../src/rest/authentication";
 import { EventChannel } from "../../src/socket/eventhandler";
 import {

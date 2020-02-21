@@ -1,3 +1,4 @@
+import "regenerator-runtime/runtime";
 import { getToken } from "../../src/rest/authentication";
 import { EventChannel } from "../../src/socket/eventhandler";
 import {

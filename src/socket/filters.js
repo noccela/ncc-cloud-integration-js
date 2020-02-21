@@ -1,5 +1,5 @@
-import { ArgumentException, NotImplementedError } from "../utils/exceptions";
-import { parseTagLiveData } from "../utils/messagepack";
+import { ArgumentException, NotImplementedError } from "../utils/exceptions.js";
+import { parseTagLiveData } from "../utils/messagepack.js";
 
 export function getFilteredCallback(
     filterClass,

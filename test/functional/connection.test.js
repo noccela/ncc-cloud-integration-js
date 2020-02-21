@@ -1,3 +1,4 @@
+import "regenerator-runtime/runtime";
 import { EventChannel } from "../../src/socket/eventhandler";
 import {
     DEV_API_DOMAIN,

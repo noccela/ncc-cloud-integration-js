@@ -1,15 +1,14 @@
-import { SOCKET_HANDLER_MISSING_ERROR } from "../constants/constants";
-import { getToken } from "../rest/authentication";
-import { ArgumentException } from "../utils/exceptions";
-import { getUniqueId, validateAccountAndSite } from "../utils/utils";
-import { Dependencies } from "./models";
-import { RequestHandler } from "./requesthandler";
+import { SOCKET_HANDLER_MISSING_ERROR } from "../constants/constants.js";
+import { getToken } from "../rest/authentication.js";
+import { ArgumentException } from "../utils/exceptions.js";
+import { getUniqueId, validateAccountAndSite } from "../utils/utils.js";
+import { RequestHandler } from "./requesthandler.js";
 import {
     authenticate,
     connectWebsocket,
     scheduleReconnection
-} from "./socketutils";
-import { getWebSocket } from "../utils/ponyfills";
+} from "./socketutils.js";
+import { getWebSocket } from "../utils/ponyfills.js";
 
 /**
  * Encloses a RequestHandler and provides additional 'robustness'
@@ -23,7 +22,7 @@ class RobustWSChannel {
      * Creates an instance of RobustWSChannel.
      * @param {string} address Socket endpoint address.
      * @param {Object} options
-     * @param {Dependencies} dependencyContainer
+     * @param {import("./models").Dependencies} dependencyContainer
      * @memberof RobustWSChannel
      */
     constructor(address, options, dependencyContainer) {
@@ -66,7 +65,9 @@ class RobustWSChannel {
 
                 // Call callback to do other actions after connection has been
                 // recreated.
-                this._onConnectionRecreated?.();
+                if (this._onConnectionRecreated) {
+                    this._onConnectionRecreated();
+                }
             } catch (e) {
                 this._logger.exception(
                     "Exception while attempting to reconnect",
@@ -190,7 +191,7 @@ class RobustWSChannel {
         this._logger.log(`Connecting to ${this._address}`);
         // Connect to cloud.
         await connectWebsocket(this._socket);
-        this._logger.log(`Connected, sending token`);
+        this._logger.log("Connected, sending token");
 
         // Send JWT to cloud for authentication.
         const { tokenExpiration, tokenIssued } = await authenticate(
@@ -273,7 +274,7 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
     // Fetch a new token and re-authenticate with the conneciton.
     async _refreshToken(authServerDomain, clientId, clientSecret) {
         // Fetch new token from auth. server.
-        this._logger.log(`Refreshing access token...`);
+        this._logger.log("Refreshing access token...");
 
         // Connection is down currently, throw and try again later.
         if (this._socketHandler === null) {
@@ -286,7 +287,7 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
             clientSecret
         );
 
-        this._logger.debug(`Got new token, sending to cloud`);
+        this._logger.debug("Got new token, sending to cloud");
 
         // Send the new token as a request.
         const uuid = getUniqueId();

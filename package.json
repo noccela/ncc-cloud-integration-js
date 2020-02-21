@@ -4,22 +4,18 @@
     "description": "Communicate with Noccela external endpoints using JS",
     "private": true,
     "main": "src/index.js",
-    "files": [
-        "src/**/*",
-        "dist/**/*.js"
-    ],
+    "type": "module",
     "scripts": {
         "test": "exit 1",
         "functionaltest": "npx jest \".\\\\test\\\\functional\\\\.*.js\"",
-        "start": "npx webpack-dev-server --config webpack.dev.js",
-        "build": "npx webpack --config webpack.prod.js",
+        "start": "npx webpack-dev-server --config webpack.dev.cjs",
+        "build": "npx webpack --config webpack.prod.cjs",
         "lint": "npx tsc -p . --noEmit"
     },
     "author": "",
     "license": "ISC",
     "devDependencies": {
         "@babel/core": "^7.7.7",
-        "@babel/plugin-proposal-optional-chaining": "^7.7.5",
         "@babel/plugin-syntax-dynamic-import": "^7.8.3",
         "@babel/preset-env": "^7.7.7",
         "@ygoe/msgpack": "^1.0.2",
@@ -28,6 +24,7 @@
         "copy-webpack-plugin": "^5.1.1",
         "eslint": "^6.8.0",
         "jest": "^25.1.0",
+        "babel-jest": "^25.1.0",
         "terser-webpack-plugin": "^2.3.4",
         "typescript": "^3.7.5",
         "webpack": "^4.41.4",
@@ -37,8 +34,6 @@
         "worker-loader": "^2.0.0"
     },
     "dependencies": {
-        "@babel/plugin-proposal-private-methods": "^7.8.3",
-        "babel-jest": "^25.1.0",
         "cross-fetch": "^3.0.4",
         "regenerator-runtime": "^0.13.3",
         "ws": "^7.2.1"

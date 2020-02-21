@@ -1,7 +1,7 @@
 // Fetch a function for current environment.
 // i.e. returns matching functions for NodeJs.
 
-import { isNodeJs } from "./utils";
+import { isNodeJs } from "./utils.js";
 
 // atob
 export function getAtob() {

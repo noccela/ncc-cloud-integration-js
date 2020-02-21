@@ -18,10 +18,10 @@ module.exports = {
     },
     ignorePatterns: [
         "node_modules/",
-        "webpack.*.js",
+        "webpack.*",
         "dist/",
         "*.test.js",
-        "babel.config.js",
+        "babel.config.cjs",
         "*.config.js"
     ]
 };

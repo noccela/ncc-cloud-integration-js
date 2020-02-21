@@ -1,6 +1,6 @@
-import { WS_MSG_CONSTANTS } from "../constants/constants";
-import { ArgumentException } from "../utils/exceptions";
-import { TrackedRequest } from "./models";
+import { WS_MSG_CONSTANTS } from "../constants/constants.js";
+import { ArgumentException } from "../utils/exceptions.js";
+import { TrackedRequest } from "./models.js";
 
 /**
  * This class handles sending and receiving messages to and from backend

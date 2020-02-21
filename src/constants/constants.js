@@ -1,4 +1,4 @@
-import { consoleLogger } from "../utils/logging";
+import { consoleLogger } from "../utils/logging.js";
 
 // Relevant WebSocket closure codes.
 export const WS_CLOSURE_CODES = {

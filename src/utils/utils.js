@@ -1,4 +1,4 @@
-import { UUID_LENGTH } from "../constants/constants";
+import { UUID_LENGTH } from "../constants/constants.js";
 
 /**
  * Generate standard-compliant UUID (v4).
