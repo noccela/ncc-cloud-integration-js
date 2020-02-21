@@ -33,7 +33,6 @@ describe("registering to events", () => {
 
     // To test this, client should be receiving any location updates.
     test("should receive location updates", async () => {
-        // const ncc = await getNcc();
         function callback(payload) {
             for (const [deviceId, deviceData] of Object.entries(payload)) {
                 expect(deviceId.length).toEqual(10);

@@ -43,6 +43,9 @@ export const DEFAULT_OPTIONS = {
 export const SOCKET_HANDLER_MISSING_ERROR =
     "Cannot send message, no authenticated connection available";
 
+// Default length for (short) id.
+export const UUID_LENGTH = 6;
+
 // Type definitions.
 
 /**

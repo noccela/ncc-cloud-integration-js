@@ -1,7 +1,7 @@
 import { SOCKET_HANDLER_MISSING_ERROR } from "../constants/constants";
 import { getToken } from "../rest/authentication";
 import { ArgumentException } from "../utils/exceptions";
-import { uuidv4, validateAccountAndSite } from "../utils/utils";
+import { getUniqueId, validateAccountAndSite } from "../utils/utils";
 import { Dependencies } from "./models";
 import { RequestHandler } from "./requesthandler";
 import {
@@ -107,7 +107,7 @@ class RobustWSChannel {
 
         validateAccountAndSite(account, site);
 
-        const uuid = uuidv4();
+        const uuid = getUniqueId();
         const request = {
             accountId: account,
             siteId: site,
@@ -289,7 +289,7 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
         this._logger.debug(`Got new token, sending to cloud`);
 
         // Send the new token as a request.
-        const uuid = uuidv4();
+        const uuid = getUniqueId();
         const response = await this._socketHandler.sendRequest(uuid, {
             action: "refreshToken",
             payload: {

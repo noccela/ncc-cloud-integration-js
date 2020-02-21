@@ -6,7 +6,7 @@ import {
     DEFAULT_AUTH_DOMAIN
 } from "../constants/paths";
 import {
-    uuidv4,
+    getUniqueId,
     validateAccountAndSite,
     validateOptions,
     waitAsync
@@ -105,6 +105,8 @@ export class EventChannel {
 
             try {
                 // Register the event using same arguments as before.
+                // This also includes the previous UUID that is used instead
+                // of generating new one so that the new event has the same ID.
                 // @ts-ignore
                 await this.register(...args);
             } catch (e) {
@@ -186,7 +188,7 @@ export class EventChannel {
     }
 
     /**
-     * Register to live updates for tags' locations ona given site.
+     * Register to live updates for tags' locations on a given site.
      *
      * This is a lightweight event and the most correct to use when only
      * location of the tags is concerned as it avoid unnecessary use of
@@ -268,17 +270,27 @@ export class EventChannel {
      * @param {Object} filters Request specific filters for request.
      * @param {(err: String, payload: Object) => void} callback Callback
      * when a filtered message is received.
+     * @param {string} requestUuid The unique ID to use to track the request.
+     * If null then a new one is generated.
      * @returns {Promise} Promise that resolves or rejects when backend verifies
      * or rejects the registration.
      * @memberof EventChannel
      * @preserve
      */
-    async register(eventType, account, site, filters, callback) {
+    async register(
+        eventType,
+        account,
+        site,
+        filters,
+        callback,
+        requestUuid = null
+    ) {
         this._validateConnection();
         validateAccountAndSite(account, site);
 
-        // Create UUID to track event and request.
-        const uuid = uuidv4();
+        // Create UUID to track event and request or use provided one.
+        const uuid = requestUuid || getUniqueId();
+
         // The type of the server response message, need to track this
         // to later unregister it.
         let registeredResponseType = null;
@@ -380,7 +392,7 @@ export class EventChannel {
                 );
         }
 
-        this._logger.log(`Registered event ${eventType}`);
+        this._logger.log(`Registered event ${eventType} with uuid ${uuid}`);
 
         // TODO: Do away with this in backend! Should be valid to have two
         // identical events registered.
@@ -414,7 +426,7 @@ export class EventChannel {
             eventType,
             registeredResponseType,
             callback,
-            [eventType, account, site, filters, callback],
+            [eventType, account, site, filters, callback, uuid],
             unregisterRequest
         );
 
@@ -476,7 +488,7 @@ export class EventChannel {
         if (unregisterRequest) {
             // Send an unregistration request to backend.
             if (this._connection) {
-                const unregistrationUuid = uuidv4();
+                const unregistrationUuid = getUniqueId();
                 if (this._connection.connected) {
                     await this._connection.sendRequest(
                         unregistrationUuid,

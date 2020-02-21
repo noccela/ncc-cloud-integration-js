@@ -1,13 +1,38 @@
+import { UUID_LENGTH } from "../constants/constants";
+
 /**
  * Generate standard-compliant UUID (v4).
  * From https://stackoverflow.com/a/2117523
  */
-export function uuidv4() {
+function uuidv4() {
     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
         const r = (Math.random() * 16) | 0,
             v = c == "x" ? r : (r & 0x3) | 0x8;
         return v.toString(16);
     });
+}
+
+/**
+ * Get a shorter unique ID.
+ */
+function shortUuid(length) {
+    return "x".repeat(length).replace(/[x]/g, () => {
+        const r = (Math.random() * 16) | 0;
+        return r.toString(16);
+    });
+}
+
+/**
+ * Get a random string that can be used as unique(ish) ID to track requests
+ * in the library and other assets.
+ *
+ * @param {boolean} useUuidV4 Use standard-compliant UUIDV4 instead of simpler
+ * random string.
+ * @param {number} shortLength If not using UUID4, the length of the random
+ * string.
+ */
+export function getUniqueId(useUuidV4 = false, shortLength = UUID_LENGTH) {
+    return useUuidV4 ? uuidv4() : shortUuid(shortLength);
 }
 
 /**
