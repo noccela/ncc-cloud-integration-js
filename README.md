@@ -2,7 +2,8 @@
 
 JavaScript library that provides methods to communicate with Noccela cloud partner APIs using JavaScript.
 
-Supports both browser environments and NodeJS.
+Supports both browser environments and NodeJS either through UMD (script tag,
+require) or ES module (both Webpack style and NodeJS mjs style).
 
 ## Overview
 
@@ -19,10 +20,11 @@ Library also handles broken connections, re-authentication and re-registration o
 The library is packaged as minified UMD (Universal Module Definition) which
 allows it to be included as a script in browser or required directly with Node.
 
-It can also be included as ES6 module either in Webpack or modern Node environment. This is the preferred way of using it as it preserves JSDoc
-and allows it to be integrated to your own build tool.
+It can also be included as ES module either in Webpack or modern Node environment.
+This is the preferred way of using it as it preserves JSDoc and allows it to be
+integrated to your own build tool.
 
-Minified build result is in _/dist/main.min.js_.
+Minified build result is in _/dist/ncc.min.js_.
 
 The _npm_ package can be installed two ways.
 
@@ -46,19 +48,23 @@ npm link @noccela/ncc-cloud-integration
 Browser:
 
 ```html
-<script src="path/to/main.min.js"></script>
+<script src="path/to/ncc.min.js"></script>
 ```
 
 CommonJS (Node)
 
 ```javascript
-const NccIntegration = require("path/to/main.min.js");
+const NccIntegration = require("path/to/ncc.min.js");
 ```
 
 ES module (Node or Webpack)
 
+-   To make this work in Node, you need to have _"type": "module"_ in _package.json_
+    or use _.mjs_ extension.
+-   https://nodejs.org/api/esm.html
+
 ```javascript
-import Ncc from "@noccela/ncc-cloud-integration";
+import * as Ncc from "@noccela/ncc-cloud-integration";
 ```
 
 ## Authentication and authorization
@@ -154,7 +160,8 @@ Custom loggers
 ```javascript
 const channel = new Ncc.EventChannel({
     loggers: [], // Don't log anything from library.
-    loggers: [ // Custom logger.
+    loggers: [
+        // Custom logger.
         {
             log: msg => {},
             warn: msg => {},
