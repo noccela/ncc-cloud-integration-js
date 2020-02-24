@@ -17,14 +17,14 @@ Library also handles broken connections, re-authentication and re-registration o
 
 ## Installation
 
-The library is packaged as minified UMD (Universal Module Definition) which
-allows it to be included as a script in browser or required directly with Node.
+The library is packaged as minified UMD (Universal Module Definition) for browser or NodeJS using require(), or to be imported as ES modules which is highly recommended because it preserves documentation and allows integration with user's build tools.
 
-It can also be included as ES module either in Webpack or modern Node environment.
-This is the preferred way of using it as it preserves JSDoc and allows it to be
-integrated to your own build tool.
+Minified version works with Node >= 10.0, ES module version with Node >= 12.0.
 
-Minified build result is in _/dist/ncc.min.js_.
+Minified build results are
+
+-   For web _/dist/ncc.min.js_
+-   For Node _/dist/ncc.node.min.cjs_
 
 The _npm_ package can be installed two ways.
 
@@ -54,7 +54,9 @@ Browser:
 CommonJS (Node)
 
 ```javascript
-const NccIntegration = require("path/to/ncc.min.js");
+// Copy ncc.node.min.cjs to your project directory.
+// Install `ws` to your project with `npm install --save ws`.
+const Ncc = require("./ncc.node.min.cjs");
 ```
 
 ES module (Node or Webpack)
@@ -64,6 +66,10 @@ ES module (Node or Webpack)
 -   https://nodejs.org/api/esm.html
 
 ```javascript
+// Install dependencies *FOR SDK* with `npm install --only=prod`.
+// This is to be run in the cloned directory, because installing
+// library through `link` prevents it from finding dependencies in
+// your project directory.
 import * as Ncc from "@noccela/ncc-cloud-integration";
 ```
 

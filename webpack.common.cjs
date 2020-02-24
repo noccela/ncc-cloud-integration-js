@@ -6,10 +6,6 @@ const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 
 module.exports = {
-    entry: {
-        // "main": "./src/index.js",
-        "ncc.min": "./src/index-wp.js"
-    },
     output: {
         filename: "[name].js",
         path: path.resolve(__dirname, "dist"),
@@ -20,20 +16,16 @@ module.exports = {
     optimization: {
         minimizer: [
             new TerserPlugin({
-                include: /ncc\.js$/,
+                // Minify only the minified module.
                 extractComments: false,
                 terserOptions: {
+                    compress: true,
                     mangle: true,
                     output: {
-                        // Preserve only JSDoc comments.
-                        comments: "some"
+                        // Preserve only banner.
+                        comments: /@noccela/
                     }
                 }
-            }),
-            new TerserPlugin({
-                // Minify only the minified module.
-                include: /ncc\.min\.js$/,
-                extractComments: false
             })
         ]
     },
@@ -63,5 +55,9 @@ module.exports = {
             banner: () =>
                 `${npmPackage.name} ${npmPackage.version}, built ${new Date()}`
         })
-    ]
+    ],
+    externals: {
+        // Node users should import this explicitly.
+        ws: "ws"
+    }
 };
