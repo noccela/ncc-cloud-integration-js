@@ -6,6 +6,10 @@
     "main": "src/index.js",
     "module": "src/index.js",
     "type": "module",
+    "include": [
+        "dist/**/*.js",
+        "src/**/*.js"
+    ],
     "scripts": {
         "test": "exit 1",
         "functionaltest": "npx jest \".\\\\test\\\\functional\\\\.*.js\"",
@@ -39,5 +43,9 @@
         "cross-fetch": "^3.0.4",
         "regenerator-runtime": "^0.13.3",
         "ws": "^7.2.1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://gitlab.com/noccela/ncc-cloud-integration-js"
     }
 }
