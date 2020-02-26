@@ -44,7 +44,7 @@ export function validateAccountAndSite(accountId, siteId) {
     if (!accountId || !Number.isInteger(accountId))
         throw Error(`Invalid accountId ${accountId}`);
     if (!siteId || !Number.isInteger(siteId))
-        throw Error(`Invalid accountId ${siteId}`);
+        throw Error(`Invalid siteId ${siteId}`);
 }
 
 /**
