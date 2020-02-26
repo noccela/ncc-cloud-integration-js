@@ -31,15 +31,17 @@ The _npm_ package can be installed two ways.
 Directly
 
 ```bash
-npm install https://ADDRESS-HERE
+npm install https://gitlab.com/noccela/ncc-cloud-integration-js
 ```
 
 Indirectly
 
 ```bash
-git clone https://ADDRESS-HERE
+git clone https://gitlab.com/noccela/ncc-cloud-integration-js
 # cd to cloned root directory
 npm link
+# install package production dependencies
+npm install --only=prod
 # cd to your project directory
 npm link @noccela/ncc-cloud-integration
 # package is linked as a dependency
@@ -66,10 +68,6 @@ ES module (Node or Webpack)
 -   https://nodejs.org/api/esm.html
 
 ```javascript
-// Install dependencies *FOR SDK* with `npm install --only=prod`.
-// This is to be run in the cloned directory, because installing
-// library through `link` prevents it from finding dependencies in
-// your project directory.
 import * as Ncc from "@noccela/ncc-cloud-integration";
 ```
 
