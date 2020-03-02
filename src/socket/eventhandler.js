@@ -323,7 +323,9 @@ export class EventChannel {
                     this._connection.registerServerCallback(
                         registeredResponseType,
                         uuid,
-                        filteredLocationUpdateCallback
+                        filteredLocationUpdateCallback.process.bind(
+                            filteredLocationUpdateCallback
+                        )
                     );
 
                     const locationUpdateRequest = {
@@ -359,7 +361,9 @@ export class EventChannel {
                     this._connection.registerServerCallback(
                         registeredResponseType,
                         uuid,
-                        filteredTagDiffCallback
+                        filteredTagDiffCallback.process.bind(
+                            filteredTagDiffCallback
+                        )
                     );
 
                     const tagChangeRequest = {
@@ -540,6 +544,36 @@ export class EventChannel {
             site,
             payload
         );
+    }
+
+    /**
+     * Bind directly to the request handler and add a callback that will
+     * be called with the raw message without filtering.
+     *
+     * This just taps into the socket, all state handling is bypassed.
+     * If socket closes the listener is not re-registered automatically.
+     *
+     * @param {string} action Action of server sent message to bind to.
+     * @param {(err: string, payload: object) => void} callback
+     */
+    registerToServerMessageRaw(action, callback) {
+        const uuid = getUniqueId();
+        this._connection.registerServerCallback(action, uuid, payload =>
+            // For compability and future-proofing, use Node-convention here too.
+            callback(null, payload)
+        );
+        return uuid;
+    }
+
+    /**
+     * Directly remove a listener from socket, registered with
+     * registerToServerMessageRaw.
+     *
+     * @param {string} action Action the callback is registered to.
+     * @param {string} uuid Unique ID of the callback, returned when registering.
+     */
+    unregisterServerMessageRaw(action, uuid) {
+        this._connection.unregisterServerCallback(action, uuid);
     }
 
     // Validate connection and throw for invalid state to prevent acting on

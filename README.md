@@ -153,13 +153,13 @@ const uuid = ...;
 await channel.unregister(uuid);
 ```
 
-Close the channel and underlying socket
+Close the channel and underlying socket.
 
 ```javascript
 await channel.close();
 ```
 
-Custom loggers
+Custom loggers.
 
 ```javascript
 const channel = new Ncc.EventChannel({
@@ -174,6 +174,30 @@ const channel = new Ncc.EventChannel({
         }
     ]
 });
+```
+
+Sending messages and registering to events directly without any tracking.
+
+```javascript
+//Send raw request.
+const response = await channel.sendMessageRaw(
+    "registerTagLocation", // Action.
+    1, // Account.
+    1, // Site.
+    {
+        deviceIds: [...] // Payload.
+    }
+)
+
+const uuid = channel.registerToServerMessageRaw(
+    "locationUpdate", // Event action.
+    (err, payload) => ... // Callback.
+);
+
+channel.unregisterServerMessageRaw(
+    "locationUpdate", // Action needed here as well.
+    uuid // UUID returned when registering.
+);
 ```
 
 ## Events
@@ -269,7 +293,7 @@ https://auth.noccela.com
 Base domain for APIs is (provided to library functions)
 
 ```
-https://partner.noccela.com
+https://api.noccela.com
 ```
 
 ## Known Issues

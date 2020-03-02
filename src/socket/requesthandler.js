@@ -198,7 +198,7 @@ export class RequestHandler {
                 for (const handler of serverHandlers) {
                     setTimeout(() => {
                         try {
-                            handler.callback.process(payload);
+                            handler.callback(payload);
                         } catch (e) {
                             this._logger.exception(
                                 "Exception while processing server message",
@@ -321,7 +321,6 @@ export class RequestHandler {
     registerServerCallback(action, uuid, callback) {
         if (!action) throw Error(`Invalid action '${action}'`);
         if (!uuid) throw Error(`Invalid uuid '${uuid}'`);
-        if (!callback.process) throw Error("Invalid callback");
 
         const handlerValue = {
             callback: callback,
