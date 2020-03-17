@@ -103,12 +103,8 @@ export class LocationUpdateFilter extends BaseFilter {
     constructor(filters) {
         super();
 
-        this._account = null;
-        this._site = null;
         this._deviceIds = null;
         ({
-            account: this._account,
-            site: this._site,
             deviceIds: this._deviceIds
         } = filters);
 
@@ -121,16 +117,14 @@ export class LocationUpdateFilter extends BaseFilter {
 
     /** @inheritdoc */
     filter(payload) {
-        const { accountId, siteId, tags } = payload;
+        if (!payload) return;
 
-        // Filter message based on site.
-        if (+accountId !== this._account) return null;
-        if (+siteId !== this._site) return null;
-        if (!tags) return null;
+        const payloadEntries = Object.entries(payload);
+        if (!payloadEntries.length) return;
 
-        if (!this._deviceIds) return tags;
+        if (!this._deviceIds) return payload;
 
-        const filteredResponse = Object.entries(tags).reduce(
+        const filteredResponse = payloadEntries.reduce(
             (prev, [deviceId, data]) => {
                 if (!this._deviceIds.has(+deviceId)) return prev;
                 return {
@@ -149,12 +143,8 @@ export class TagDiffStreamFilter extends BaseFilter {
     constructor(filters) {
         super();
 
-        this._account = null;
-        this._site = null;
         this._deviceIds = null;
         ({
-            account: this._account,
-            site: this._site,
             deviceIds: this._deviceIds
         } = filters);
 
@@ -167,11 +157,7 @@ export class TagDiffStreamFilter extends BaseFilter {
 
     /** @inheritdoc */
     filter(payload) {
-        const { accountId, siteId, tags, removedTags } = payload;
-
-        // Filter message based on site.
-        if (+accountId !== this._account) return null;
-        if (+siteId !== this._site) return null;
+        const { tags, removedTags } = payload;
         if (!tags && !removedTags) return null;
 
         if (!this._deviceIds)
@@ -226,12 +212,8 @@ export class TagInitialStateFilter extends BaseFilter {
     constructor(filters) {
         super();
 
-        this._account = null;
-        this._site = null;
         this._deviceIds = null;
         ({
-            account: this._account,
-            site: this._site,
             deviceIds: this._deviceIds
         } = filters);
 
@@ -244,15 +226,8 @@ export class TagInitialStateFilter extends BaseFilter {
 
     /** @inheritdoc */
     filter(payload) {
-        const { accountId, siteId, data } = payload;
-
-        // Filter message based on site.
-        if (+accountId !== this._account) return null;
-        if (+siteId !== this._site) return null;
-        if (!data) return null;
-
         // Parse encoded response.
-        let response = parseTagLiveData(data);
+        let response = parseTagLiveData(payload);
         if (!this._deviceIds) return response;
 
         // Filter by device ID.

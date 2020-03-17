@@ -35,7 +35,6 @@ export const DEFAULT_OPTIONS = {
     requestTimeout: 60000,
     automaticTokenRenewal: true,
     tokenRefreshFailureRetryTimeout: 60000,
-    useWebWorkers: true,
     registrationAttemptsUntilIgnored: 50,
     waitForFailedReRegistration: 1000
 };
@@ -76,8 +75,6 @@ export const UUID_LENGTH = 6;
  * fetching and re-authentication automatically
  * @prop {number} [tokenRefreshFailureRetryTimeout] - Timeout to try again in case
  * fetching new token fails
- * @prop {Boolean} [useWebWorkers] - Handle socket and filtering in web worker if
- * they are available
  * @prop {Number} [registrationAttemptsUntilIgnored] - How many times event will
  * be attempted to be re-registered until it is ditched completely.
  * * @prop {Number} [waitForFailedReRegistration] - Time to wait in case a re-

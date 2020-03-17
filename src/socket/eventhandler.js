@@ -1,8 +1,7 @@
 import { DEFAULT_OPTIONS, EVENT_TYPES } from "../constants/constants.js";
 import {
-    NCC_PATHS,
-    DEFAULT_API_DOMAIN,
-    DEFAULT_AUTH_DOMAIN
+    DEFAULT_AUTH_ORIGIN,
+    DEFAULT_API_HTTP_ORIGIN
 } from "../constants/paths.js";
 import {
     getUniqueId,
@@ -18,6 +17,7 @@ import {
     TagDiffStreamFilter
 } from "./filters.js";
 import { Dependencies, RegisteredEvent } from "./models.js";
+import { ArgumentException } from "../utils/exceptions.js";
 
 /**
  * Class that encloses a connection to Noccela's backend and provides high-level
@@ -33,21 +33,32 @@ import { Dependencies, RegisteredEvent } from "./models.js";
 export class EventChannel {
     /**
      * Creates an instance of EventChannel.
+     *
+     * @param {number} account Site's account.
+     * @param {number} site Site's ID.
      * @param {import("../constants/constants").GlobalOptions} [userOptions={}]
      * User-provided options that override defaults.
-     * @param {string} domain Domain for the backend.
+     * @param {string} httpOrigin Origin for the backend. Includes protocol
+     * but no path.
      * @memberof EventChannel
      * @preserve
      */
-    constructor(userOptions = {}, domain = DEFAULT_API_DOMAIN) {
-        // Build the complete WS endpoint address.
-        /** @type {string} */
-        const address = new URL(NCC_PATHS["REALTIME_API"], domain).href;
+    constructor(
+        account,
+        site,
+        userOptions = {},
+        httpOrigin = DEFAULT_API_HTTP_ORIGIN
+    ) {
+        validateAccountAndSite(account, site);
 
         // Combine default options with provided ones.
         /** @type {import("../constants/constants").GlobalOptions} */
-        const options = Object.assign(DEFAULT_OPTIONS, userOptions);
+        const options = {
+            ...DEFAULT_OPTIONS,
+            ...userOptions
+        };
         this._options = options;
+        this._origin = httpOrigin;
 
         // Create logger functions that call all registered loggers.
         /** @type {import("../constants/constants").Logger} */
@@ -73,18 +84,10 @@ export class EventChannel {
             logger: logger
         });
 
-        // TODO: Web workers.
-        // let useWebWorker = false;
-        // if (userOptions.useWebWorkers) {
-        //     if (typeof (window !== undefined) && window.Worker) {
-        //         useWebWorker = true;
-        //     } else {
-        //         logger.debug("Cannot use web worker in current environment");
-        //     }
-        // }
-
         this._connection = new RobustAuthenticatedWSChannel(
-            address,
+            this._origin,
+            account,
+            site,
             this._options,
             this._dependencyContainer
         );
@@ -157,22 +160,17 @@ export class EventChannel {
      * one go. Also automatically schedules new token retrieval if 'automaticTokenRenewal'
      * is true in options.
      *
-     * @param {number} clientId Client ID to authenticate with.
-     * @param {string} clientSecret Client secret.
+     * @param {() => Promise<string>} getToken Async callback that fetches the
+     * access token.
      * @param {string} authServerDomain Authentication server domain.
      * @returns {Promise} Promise that resolves when connection is established.
      * @memberof EventChannel
      * @preserve
      */
-    async connectPersistent(
-        clientId,
-        clientSecret,
-        authServerDomain = DEFAULT_AUTH_DOMAIN
-    ) {
+    async connectPersistent(getToken, authServerDomain = DEFAULT_AUTH_ORIGIN) {
         return this._connection.createAuthenticatedConnection(
             authServerDomain,
-            clientId,
-            clientSecret
+            getToken
         );
     }
 
@@ -197,16 +195,15 @@ export class EventChannel {
      * bandwidth.
      *
      * @param {(err: String, payload: Object) => void} callback
-     * @param {Number} account
-     * @param {Number} site
      * @param {Number[]} [deviceIds] Devices to get updates for. If null then
      * all devides from the site.
      */
-    async registerLocationUpdate(callback, account, site, deviceIds = null) {
+    async registerLocationUpdate(callback, deviceIds = null) {
+        if (deviceIds && deviceIds.constructor !== Array) {
+            throw new ArgumentException("deviceIds");
+        }
         return this.register(
             EVENT_TYPES["LOCATION_UPDATE"],
-            account,
-            site,
             {
                 deviceIds
             },
@@ -223,16 +220,15 @@ export class EventChannel {
      * To get the full state whenever you want, use @see{EventChannel#getTagState}.
      *
      * @param {(err: String, payload: Object) => void} callback
-     * @param {Number} account
-     * @param {Number} site
      * @param {Number[]} [deviceIds] Devices to get updates for. If null then
      * all devides from the site.
      */
-    async registerInitialTagState(callback, account, site, deviceIds = null) {
+    async registerInitialTagState(callback, deviceIds = null) {
+        if (deviceIds && deviceIds.constructor !== Array) {
+            throw new ArgumentException("deviceIds");
+        }
         return this.register(
             EVENT_TYPES["TAG_STATE"],
-            account,
-            site,
             {
                 deviceIds
             },
@@ -244,16 +240,15 @@ export class EventChannel {
      * Register to incremental updates for tags' state on a given site.
      *
      * @param {(err: String, payload: Object) => void} callback
-     * @param {Number} account
-     * @param {Number} site
      * @param {Number[]} [deviceIds] Devices to get updates for. If null then
      * all devides from the site.
      */
-    async registerTagDiffStream(callback, account, site, deviceIds = null) {
+    async registerTagDiffStream(callback, deviceIds = null) {
+        if (deviceIds && deviceIds.constructor !== Array) {
+            throw new ArgumentException("deviceIds");
+        }
         return this.register(
             EVENT_TYPES["TAG_DIFF"],
-            account,
-            site,
             {
                 deviceIds
             },
@@ -267,8 +262,6 @@ export class EventChannel {
      * be invoked with response filtered with the provided filters.
      *
      * @param {string} eventType Type of the event to be registered.
-     * @param {number} account Account id for the site.
-     * @param {number} site Site id for the site.
      * @param {Object} filters Request specific filters for request.
      * @param {(err: String, payload: Object) => void} callback Callback
      * when a filtered message is received.
@@ -279,16 +272,8 @@ export class EventChannel {
      * @memberof EventChannel
      * @preserve
      */
-    async register(
-        eventType,
-        account,
-        site,
-        filters,
-        callback,
-        requestUuid = null
-    ) {
+    async register(eventType, filters, callback, requestUuid = null) {
         this._validateConnection();
-        validateAccountAndSite(account, site);
 
         // Create UUID to track event and request or use provided one.
         const uuid = requestUuid || getUniqueId();
@@ -302,9 +287,7 @@ export class EventChannel {
         filters = filters || {};
 
         const combinedFilters = {
-            ...filters,
-            account,
-            site
+            ...filters
         };
 
         switch (eventType) {
@@ -329,8 +312,6 @@ export class EventChannel {
                     );
 
                     const locationUpdateRequest = {
-                        accountId: account,
-                        siteId: site,
                         action: "registerTagLocation",
                         payload: filters
                     };
@@ -367,8 +348,6 @@ export class EventChannel {
                     );
 
                     const tagChangeRequest = {
-                        accountId: account,
-                        siteId: site,
                         action: "registerTagDiffStream",
                         payload: filters
                     };
@@ -386,8 +365,6 @@ export class EventChannel {
                     registeredResponseType = "initialTagState";
 
                     const initialResponse = await this.getTagState(
-                        account,
-                        site,
                         filters["deviceIds"]
                     );
 
@@ -441,7 +418,7 @@ export class EventChannel {
             eventType,
             registeredResponseType,
             callback,
-            [eventType, account, site, filters, callback, uuid],
+            [eventType, filters, callback, uuid],
             unregisterRequest
         );
 
@@ -451,20 +428,15 @@ export class EventChannel {
     /**
      * Fetch initial state for tags on the site.
      *
-     * @param {number} account Site's account id.
-     * @param {number} site Site's id.
      * @memberof EventChannel
      * @preserve
      */
-    async getTagState(account, site, deviceIds = null) {
+    async getTagState(deviceIds = null) {
         this._validateConnection();
-        validateAccountAndSite(account, site);
 
         const payload = await this._connection.sendRequest(
             "getInitialTagState",
             {
-                accountId: account,
-                siteId: site,
                 action: "initialTagState",
                 payload: {
                     deviceIds
@@ -476,8 +448,6 @@ export class EventChannel {
 
         // Parse the encoded message.
         const filter = new TagInitialStateFilter({
-            account,
-            site,
             deviceIds
         });
         return filter.filter(payload);
@@ -531,19 +501,12 @@ export class EventChannel {
      * Send a raw request to cloud.
      *
      * @param {string} action Request type.
-     * @param {number} account Account id for requested site.
-     * @param {number} site Site id for requested site.
      * @param {Object} payload Request payload object.
      * @memberof EventChannel
      * @preserve
      */
-    async sendMessageRaw(action, account, site, payload) {
-        return await this._connection.sendMessageRaw(
-            action,
-            account,
-            site,
-            payload
-        );
+    async sendMessageRaw(action, payload) {
+        return await this._connection.sendMessageRaw(action, payload);
     }
 
     /**

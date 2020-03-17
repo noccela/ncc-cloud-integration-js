@@ -149,7 +149,7 @@ export class RequestHandler {
         if (uniqueId === "getInitialTagState" && !statusOk) {
             // Initial tag state response is of different type if the request
             // is successful, but if it fails it returns with the original uniqueId.
-            action = "initialTagState";
+            uniqueId = "initialTagState";
         } else if (uniqueId === "getInitialTagState" && statusOk) {
             // This is expected, don't complain.
             skipHandlerCheck = true;

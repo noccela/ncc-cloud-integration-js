@@ -1,7 +1,6 @@
 import { SOCKET_HANDLER_MISSING_ERROR } from "../constants/constants.js";
-import { getToken } from "../rest/authentication.js";
 import { ArgumentException } from "../utils/exceptions.js";
-import { getUniqueId, validateAccountAndSite } from "../utils/utils.js";
+import { getUniqueId } from "../utils/utils.js";
 import { RequestHandler } from "./requesthandler.js";
 import {
     authenticate,
@@ -9,6 +8,8 @@ import {
     scheduleReconnection
 } from "./socketutils.js";
 import { getWebSocket } from "../utils/ponyfills.js";
+import { getNodeDomainForSite } from "../http/site.js";
+import { NCC_PATHS } from "../constants/paths.js";
 
 /**
  * Encloses a RequestHandler and provides additional 'robustness'
@@ -20,20 +21,30 @@ import { getWebSocket } from "../utils/ponyfills.js";
 class RobustWSChannel {
     /**
      * Creates an instance of RobustWSChannel.
-     * @param {string} address Socket endpoint address.
+     *
+     * @param {string} domain
+     * @param {number} accountId
+     * @param {number} siteId
      * @param {Object} options
      * @param {import("./models").Dependencies} dependencyContainer
      * @memberof RobustWSChannel
      */
-    constructor(address, options, dependencyContainer) {
-        if (!address || typeof address !== "string") {
-            throw Error("Invalid address");
-        }
-        if (!address.startsWith("ws")) {
-            throw Error("Invalid protocol for WS address, expected ws or wss");
+    constructor(domain, accountId, siteId, options, dependencyContainer) {
+        if (
+            !domain ||
+            typeof domain !== "string" ||
+            !domain.startsWith("http")
+        ) {
+            throw Error("Invalid domain");
         }
 
-        this._address = address;
+        this._addressCallback = this._getAddress.bind(
+            this,
+            domain,
+            accountId,
+            siteId
+        );
+
         this._options = options;
 
         // Internal socket state.
@@ -52,6 +63,31 @@ class RobustWSChannel {
         this._reconnect = this._reconnect.bind(this);
     }
 
+    _getWebsocketAddress(domain) {
+        return new URL(NCC_PATHS["REALTIME_API"], domain);
+    }
+
+    // Fetch domain for the site handler and build the
+    // websocket URL to connect to.
+    async _getAddress(lbDomain, accountId, siteId, accessToken) {
+        const directDomain = await getNodeDomainForSite(
+            accessToken,
+            lbDomain,
+            accountId,
+            siteId
+        );
+
+        const useTls = lbDomain.startsWith("https");
+        const protocol = useTls ? "wss://" : "ws://";
+        const directOrigin = `${protocol}${directDomain}`;
+
+        const url = this._getWebsocketAddress(directOrigin);
+        url.searchParams.append("account", accountId);
+        url.searchParams.append("site", siteId);
+
+        return url.href;
+    }
+
     // Called by socket handler if connection closes unexpectedly.
     // Attempts to connect again later with increasing intervals.
     _reconnect() {
@@ -61,24 +97,30 @@ class RobustWSChannel {
         // Attempt to connect, authenticate and re-establish the previous state.
         async function connectionAttempt() {
             try {
+                // @ts-ignore
                 await this.connect(this._lastJwtUsed);
 
                 // Call callback to do other actions after connection has been
                 // recreated.
+                // @ts-ignore
                 if (this._onConnectionRecreated) {
+                    // @ts-ignore
                     this._onConnectionRecreated();
                 }
             } catch (e) {
+                // @ts-ignore
                 this._logger.exception(
                     "Exception while attempting to reconnect",
                     e
                 );
 
                 // Delay and schedule new attempt after attempt failed.
+                // @ts-ignore
                 this._reconnect();
                 return;
             }
 
+            // @ts-ignore
             this._logger.log("Connection re-established");
         }
 
@@ -95,23 +137,17 @@ class RobustWSChannel {
      * Send a message with payload directly.
      *
      * @param {string} action Action name.
-     * @param {number} account Site's account ID.
-     * @param {number} site Site's ID.
      * @param {Object} payload Action's payload.
      * @returns Promise that resolves with the response payload.
      * @memberof RobustWSChannel
      */
-    async sendMessageRaw(action, account, site, payload) {
+    async sendMessageRaw(action, payload) {
         if (this._socketHandler === null) {
             throw Error(SOCKET_HANDLER_MISSING_ERROR);
         }
 
-        validateAccountAndSite(account, site);
-
         const uuid = getUniqueId();
         const request = {
-            accountId: account,
-            siteId: site,
             payload: payload,
             action: action
         };
@@ -186,9 +222,15 @@ class RobustWSChannel {
         this._webSocketStateOpen = wsConstructor.OPEN;
         this._webSocketStateClosed = wsConstructor.CLOSED;
 
-        this._socket = new wsConstructor(this._address);
+        const address = await this._addressCallback(jwt);
+        if (!address.startsWith("ws")) {
+            throw Error(
+                `Invalid protocol for WS address, expected ws or wss, got ${address}`
+            );
+        }
+        this._socket = new wsConstructor(address);
 
-        this._logger.log(`Connecting to ${this._address}`);
+        this._logger.log(`Connecting to ${address}`);
         // Connect to cloud.
         await connectWebsocket(this._socket);
         this._logger.log("Connected, sending token");
@@ -271,8 +313,8 @@ class RobustWSChannel {
  * @extends {RobustWSChannel}
  */
 export class RobustAuthenticatedWSChannel extends RobustWSChannel {
-    // Fetch a new token and re-authenticate with the conneciton.
-    async _refreshToken(authServerDomain, clientId, clientSecret) {
+    // Fetch a new token and re-authenticate with the connection.
+    async _refreshToken(authServerDomain, getToken) {
         // Fetch new token from auth. server.
         this._logger.log("Refreshing access token...");
 
@@ -281,11 +323,7 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
             throw Error(SOCKET_HANDLER_MISSING_ERROR);
         }
 
-        const { accessToken: newToken } = await getToken(
-            authServerDomain,
-            clientId,
-            clientSecret
-        );
+        const newToken = await getToken(authServerDomain);
 
         this._logger.debug("Got new token, sending to cloud");
 
@@ -316,16 +354,15 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
      * @param {{authServerDomain: string
      * , tokenExpiration: number
      * , tokenIssued: number
-     * , clientId: number
-     * , clientSecret: string}} args Arguments object.
+     * , getToken: (domain: string) => Promise<string>
+     * }} args
      */
     scheduleTokenRefresh(args) {
         const {
             authServerDomain,
             tokenExpiration,
             tokenIssued,
-            clientId,
-            clientSecret
+            getToken
         } = args;
 
         // Calculate the wait until token should be refreshed, half of the time
@@ -350,11 +387,7 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
                 const {
                     tokenExpiration,
                     tokenIssued
-                } = await this._refreshToken(
-                    authServerDomain,
-                    clientId,
-                    clientSecret
-                );
+                } = await this._refreshToken(authServerDomain, getToken);
 
                 // Schedule next refreshal with new values.
                 this.scheduleTokenRefresh({
@@ -387,20 +420,23 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
      * automatic token refreshals.
      *
      * @param {string} authServerDomain Domain for authentication server.
-     * @param {number} clientId Client ID.
-     * @param {string} clientSecret Client secret.
+     * @param {(domain: string) => Promise<string>} getToken Async callback that fetches the
+     * access token.
      * @memberof RobustAuthenticatedWSChannel
      */
-    async createAuthenticatedConnection(
-        authServerDomain,
-        clientId,
-        clientSecret
-    ) {
-        const { accessToken: token } = await getToken(
-            clientId,
-            clientSecret,
-            authServerDomain
-        );
+    async createAuthenticatedConnection(authServerDomain, getToken) {
+        if (!authServerDomain || !authServerDomain.startsWith("http")) {
+            throw Error("Invalid auth. server domain");
+        }
+
+        if (!getToken || typeof getToken !== "function") {
+            throw Error("Invalid getToken callback");
+        }
+
+        const token = await getToken(authServerDomain);
+        if (!token || typeof token !== "string" || !token.length) {
+            throw Error("Got invalid token from getToken callback");
+        }
 
         const { tokenExpiration, tokenIssued } = await this.connect(token);
 
@@ -409,8 +445,7 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
                 authServerDomain,
                 tokenExpiration,
                 tokenIssued,
-                clientId,
-                clientSecret
+                getToken
             });
         }
     }

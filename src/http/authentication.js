@@ -1,7 +1,7 @@
 import fetch from "cross-fetch";
 import {
     AUTH_TOKEN_ENDPOINT,
-    DEFAULT_AUTH_DOMAIN
+    DEFAULT_AUTH_ORIGIN
 } from "../constants/paths.js";
 import { ArgumentException } from "../utils/exceptions.js";
 
@@ -26,7 +26,7 @@ import { ArgumentException } from "../utils/exceptions.js";
 export async function getToken(
     clientId,
     clientSecret,
-    domain = DEFAULT_AUTH_DOMAIN
+    domain = DEFAULT_AUTH_ORIGIN
 ) {
     if (!domain || !domain.startsWith("http")) {
         throw new ArgumentException("domain");
@@ -56,6 +56,11 @@ export async function getToken(
         },
         body: authRequestBody
     });
+
+    const statusCode = authResponse.status;
+    if (!authResponse.ok || statusCode !== 200) {
+        throw Error(authResponse.statusText || "StatusCode ${statusCode}");
+    }
 
     // Pick the relevant properties.
     // Scopes are not used in Noccela APIs, at least yet so ignoring.
