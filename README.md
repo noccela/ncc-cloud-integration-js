@@ -63,8 +63,9 @@ const Ncc = require("./ncc.node.min.cjs");
 
 ES module (Node or Webpack)
 
--   To make this work in Node, you need to have _"type": "module"_ in _package.json_
+-   To make this work in Node, you need to have `"type": "module"` in _package.json_
     or use _.mjs_ extension.
+-   Works out of the box for Node 13, Node 12 might require `--experimentalModules` flag
 -   https://nodejs.org/api/esm.html
 
 ```javascript
@@ -97,12 +98,17 @@ const {
 );
 ```
 
-Connect to cloud with the access token.
+Connect to cloud with the access token. Account and site ID for the site is
+provided here. One channel handles one site's data.
 
 ```javascript
-const channel = new Ncc.EventChannel({
-    /* User options, can be null. */
-});
+const channel = new Ncc.EventChannel(
+    123, // Account ID.
+    123, // Site ID.
+    {
+        /* User options, can be null. */
+    }
+);
 
 // Connect to Noccela Cloud.
 await channel.connect(accessToken);
@@ -111,10 +117,16 @@ await channel.connect(accessToken);
 ```
 
 Connect with a persistent connection that is automatically re-authenticated when
-token has less than half of its time left.
+token has less than half of its time left. The provided argument is a callback
+that returns the new access token.
 
 ```javascript
-await channel.connectPersistent(clientId, clientSecret);
+async function fetchToken() {
+    const token = // ... Fetch token.
+    return token;
+}
+
+await channel.connectPersistent(fetchToken);
 
 // Authenticated connection is available "forever". Otherwise works just the same.
 ```
@@ -140,8 +152,6 @@ const callback = (err, payload) => {
 // and resolves if everything was ok.
 const uuid = await channel.registerLocationUpdate(
     callback,
-    1, // Site account ID.
-    1, // Site ID.
     [12345] // Device serial numbers, can be null for all devices on site.
 );
 ```
@@ -182,8 +192,6 @@ Sending messages and registering to events directly without any tracking.
 //Send raw request.
 const response = await channel.sendMessageRaw(
     "registerTagLocation", // Action.
-    1, // Account.
-    1, // Site.
     {
         deviceIds: [...] // Payload.
     }
@@ -213,16 +221,12 @@ Contains only the coordinates of tags.
 ```javascript
 await channel.registerLocationUpdate(
     callback,
-    1, // Account
-    1, // Site
     null // Array of tag device serial numbers or null.
 );
 
 // Same as:
 await channel.register(
     Ncc.EVENT_TYPES["LOCATION_UPDATE"],
-    1, // Account
-    1, // Site
     { deviceIds: [...]} // Filters
     callback // Callback
 );
@@ -245,8 +249,6 @@ Tag's full state, including sensor values, timestamps and other state properties
 ```javascript
 await channel.registerInitialTagState(
     callback,
-    1, // Account
-    1, // Site
     null // Array of tag device serial numbers or null.
 );
 
@@ -260,8 +262,6 @@ Incremental updates to tag's full state. Includes only changed properties and is
 ```javascript
 await channel.registerTagDiffStream(
     callback,
-    1, // Account
-    1, // Site
     null // Array of tag device serial numbers or null.
 );
 
@@ -303,6 +303,16 @@ https://api.noccela.com
     identical filters is possible and works, but when one of the is unregistered
     they are all removed from backend. This is why you should avoid creating multiple
     requests for same event type if possible.
+
+## Changelog
+
+1.1
+
+-   Fixed initial tag state hanging until timeout in some cases
+-   Refactor EventChannel to handle only one site
+    -   Removed account and site arguments from methods
+    -   Added account and site to constructor
+-   Added new function for fetching socket domain prior to connecting WS
 
 ## Todo
 
