@@ -105,7 +105,7 @@ class RobustWSChannel {
                 // @ts-ignore
                 if (this._onConnectionRecreated) {
                     // @ts-ignore
-                    this._onConnectionRecreated();
+                    await this._onConnectionRecreated();
                 }
             } catch (e) {
                 // @ts-ignore
