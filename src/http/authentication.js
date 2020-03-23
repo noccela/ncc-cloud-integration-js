@@ -59,7 +59,7 @@ export async function getToken(
 
     const statusCode = authResponse.status;
     if (!authResponse.ok || statusCode !== 200) {
-        throw Error(authResponse.statusText || "StatusCode ${statusCode}");
+        throw Error(authResponse.statusText || `StatusCode ${statusCode}`);
     }
 
     // Pick the relevant properties.

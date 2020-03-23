@@ -19,7 +19,7 @@ export async function sendAuthenticatedRequest(url, method, body, accessToken) {
 
     const statusCode = response.status;
     if (!response.ok || statusCode !== 200) {
-        throw Error(response.statusText || "StatusCode ${statusCode}");
+        throw Error(response.statusText || `StatusCode ${statusCode}`);
     }
 
     return await response.json();

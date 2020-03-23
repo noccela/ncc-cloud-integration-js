@@ -539,6 +539,11 @@ export class EventChannel {
         this._connection.unregisterServerCallback(action, uuid);
     }
 
+    get connected() {
+        if (!this._connection) return false;
+        return this._connection.connected;
+    }
+
     // Validate connection and throw for invalid state to prevent acting on
     // failed socket.
     _validateConnection() {
