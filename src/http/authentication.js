@@ -1,7 +1,7 @@
 import fetch from "cross-fetch";
 import {
     AUTH_TOKEN_ENDPOINT,
-    DEFAULT_AUTH_ORIGIN
+    DEFAULT_AUTH_ORIGIN,
 } from "../constants/paths.js";
 import { ArgumentException } from "../utils/exceptions.js";
 
@@ -21,14 +21,14 @@ import { ArgumentException } from "../utils/exceptions.js";
  *
  * @param {number} clientId Client if for registered app.
  * @param {string} clientSecret Client secret for app.
- * @param {string} domain Base domain for authentication server, without path.
+ * @param {string} authOrigin Base domain for authentication server, without path.
  */
 export async function getToken(
     clientId,
     clientSecret,
-    domain = DEFAULT_AUTH_ORIGIN
+    authOrigin = DEFAULT_AUTH_ORIGIN
 ) {
-    if (!domain || !domain.startsWith("http")) {
+    if (!authOrigin || !authOrigin.startsWith("http")) {
         throw new ArgumentException("domain");
     }
     if (!clientId || typeof clientId != "number") {
@@ -39,7 +39,7 @@ export async function getToken(
     }
 
     // Construct the full OAuth2 token endpoint.
-    const url = new URL(AUTH_TOKEN_ENDPOINT, domain).href;
+    const url = new URL(AUTH_TOKEN_ENDPOINT, authOrigin).href;
 
     // Build the request body.
     // Token request only supports x-www-form-urlencoded, not json.
@@ -52,9 +52,9 @@ export async function getToken(
     const authResponse = await fetch(url, {
         method: "post",
         headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Content-Type": "application/x-www-form-urlencoded",
         },
-        body: authRequestBody
+        body: authRequestBody,
     });
 
     const statusCode = authResponse.status;
@@ -67,7 +67,7 @@ export async function getToken(
     const {
         expires_in: tokenExpiration,
         access_token: accessToken,
-        error
+        error,
     } = await authResponse.json();
 
     if (error) {
@@ -77,6 +77,6 @@ export async function getToken(
 
     return {
         tokenExpiration,
-        accessToken
+        accessToken,
     };
 }
