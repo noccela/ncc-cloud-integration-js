@@ -3,20 +3,20 @@ import { consoleLogger } from "../utils/logging.js";
 // Relevant WebSocket closure codes.
 export const WS_CLOSURE_CODES = {
     NORMAL_CLOSURE: 1001,
-    NO_STATUS: 1005
+    NO_STATUS: 1005,
 };
 
 export const WS_MSG_CONSTANTS = {
     PING_MSG: "",
     PONG_MSG: "1",
-    CLOUD_RESPONSE_OK: "ok"
+    CLOUD_RESPONSE_OK: "ok",
 };
 
 // Events the user can register to.
 export const EVENT_TYPES = {
     LOCATION_UPDATE: "LOCATION_UPDATE",
     TAG_STATE: "TAG_STATE",
-    TAG_DIFF: "TAG_DIFF"
+    TAG_DIFF: "TAG_DIFF",
 };
 
 // Default settings that are extended or overridden by user provided ones.
@@ -27,7 +27,7 @@ export const DEFAULT_OPTIONS = {
     retryIntervalMin: 1000,
     retryIntervalMax: 60000,
     retryIntervalIncrease: 1000,
-    logRawMessages: true,
+    logRawMessages: false,
     onMessage: null,
     onClose: null,
     onError: null,
@@ -36,7 +36,7 @@ export const DEFAULT_OPTIONS = {
     automaticTokenRenewal: true,
     tokenRefreshFailureRetryTimeout: 60000,
     registrationAttemptsUntilIgnored: 50,
-    waitForFailedReRegistration: 1000
+    waitForFailedReRegistration: 1000,
 };
 
 export const SOCKET_HANDLER_MISSING_ERROR =

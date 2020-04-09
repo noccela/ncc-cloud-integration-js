@@ -1,5 +1,7 @@
 # Noccela JS SDK
 
+### Version 2.0
+
 JavaScript library that provides methods to communicate with Noccela cloud partner APIs using JavaScript.
 
 Supports both browser environments and NodeJS either through UMD (script tag,
@@ -31,13 +33,13 @@ The _npm_ package can be installed two ways.
 Directly
 
 ```bash
-npm install https://gitlab.com/noccela/ncc-cloud-integration-js
+npm install https://bitbucket.org/noccela/ncc-cloud-integration.git
 ```
 
 Indirectly
 
 ```bash
-git clone https://gitlab.com/noccela/ncc-cloud-integration-js
+git clone https://bitbucket.org/noccela/ncc-cloud-integration.git
 # cd to cloned root directory
 npm link
 # install package production dependencies
@@ -177,12 +179,12 @@ const channel = new Ncc.EventChannel({
     loggers: [
         // Custom logger.
         {
-            log: msg => {},
-            warn: msg => {},
-            error: msg => {},
-            exception: msg => {}
-        }
-    ]
+            log: (msg) => {},
+            warn: (msg) => {},
+            error: (msg) => {},
+            exception: (msg) => {},
+        },
+    ],
 });
 ```
 
@@ -237,6 +239,7 @@ await channel.register(
         "x": 123, // X
         "y": 123,// Y
         "floor": 123 // Floor ID
+        "timestamp": 1234567 // Unix timestamp in ms
     }
 }
 */
@@ -268,7 +271,6 @@ await channel.registerTagDiffStream(
 /*
     "tags": {
         "123": { // Indexed by serial number.
-            "isOnline": true, // Just indicates that the tag is alive.
             ... check the rest of the properties from PDF
         }
     },
@@ -305,6 +307,16 @@ https://api.noccela.com
     requests for same event type if possible.
 
 ## Changelog
+
+2.0
+
+-   Account and site parameters moved from _EventChannel_ methods to constructor
+    (Public API change)
+-   Library fetches correct subdomain automatically, correcting issues of not
+    sometimes receiving updates
+-   Raw socket messages not logged automatically
+-   Various minor fixes and improvements (internal)
+-   connectPersistent() takes now async callback that resolves into new JWT (Public API change) to inverse control and avoid storing credentials to library state
 
 1.1
 
