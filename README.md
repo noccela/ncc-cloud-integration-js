@@ -33,13 +33,13 @@ The _npm_ package can be installed two ways.
 Directly
 
 ```bash
-npm install https://bitbucket.org/noccela/ncc-cloud-integration.git
+npm install https://github.com/Noccela/ncc-cloud-integration-js
 ```
 
 Indirectly
 
 ```bash
-git clone https://bitbucket.org/noccela/ncc-cloud-integration.git
+git clone https://github.com/Noccela/ncc-cloud-integration-js
 # cd to cloned root directory
 npm link
 # install package production dependencies
