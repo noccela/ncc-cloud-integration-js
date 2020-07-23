@@ -17,6 +17,7 @@ export const EVENT_TYPES = {
     LOCATION_UPDATE: "LOCATION_UPDATE",
     TAG_STATE: "TAG_STATE",
     TAG_DIFF: "TAG_DIFF",
+    TWR_DATA: "TWR_DATA",
 };
 
 // Default settings that are extended or overridden by user provided ones.

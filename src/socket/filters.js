@@ -99,14 +99,46 @@ class BaseFilter {
     }
 }
 
+export class TwrDataFilter extends BaseFilter {
+    constructor(filters) {
+        super();
+
+        this._tagDeviceIds = null;
+        this._beaconDeviceIds = null;
+        ({
+            tagDeviceIds: this._tagDeviceIds,
+            beaconDeviceIds: this._beaconDeviceIds,
+        } = filters);
+
+        if (this._tagDeviceIds) {
+            this._tagDeviceIds = new Set(this._tagDeviceIds);
+        }
+
+        this.filter = this.filter.bind(this);
+    }
+
+    /** @inheritdoc */
+    filter(payload) {
+        if (!payload) return;
+
+        const { tId: tagDeviceId, bId: beaconDeviceId } = payload;
+        // TODO: What should happen on invalid message?
+        if (!tagDeviceId || !beaconDeviceId) return null;
+
+        if (this._tagDeviceIds && !this._tagDeviceIds.has(tagDeviceId)) return;
+        if (this._beaconDeviceIds && !this._beaconDeviceIds.has(beaconDeviceId))
+            return;
+
+        return payload;
+    }
+}
+
 export class LocationUpdateFilter extends BaseFilter {
     constructor(filters) {
         super();
 
         this._deviceIds = null;
-        ({
-            deviceIds: this._deviceIds
-        } = filters);
+        ({ deviceIds: this._deviceIds } = filters);
 
         if (this._deviceIds) {
             this._deviceIds = new Set(this._deviceIds);
@@ -129,7 +161,7 @@ export class LocationUpdateFilter extends BaseFilter {
                 if (!this._deviceIds.has(+deviceId)) return prev;
                 return {
                     ...prev,
-                    [deviceId]: data
+                    [deviceId]: data,
                 };
             },
             {}
@@ -144,9 +176,7 @@ export class TagDiffStreamFilter extends BaseFilter {
         super();
 
         this._deviceIds = null;
-        ({
-            deviceIds: this._deviceIds
-        } = filters);
+        ({ deviceIds: this._deviceIds } = filters);
 
         if (this._deviceIds) {
             this._deviceIds = new Set(this._deviceIds);
@@ -163,14 +193,14 @@ export class TagDiffStreamFilter extends BaseFilter {
         if (!this._deviceIds)
             return {
                 tags,
-                removedTags: removedTags
+                removedTags: removedTags,
             };
 
         const filterTags = (prev, [deviceId, data]) => {
             if (!this._deviceIds.has(+deviceId)) return prev;
             return {
                 ...prev,
-                [deviceId]: data
+                [deviceId]: data,
             };
         };
 
@@ -181,7 +211,7 @@ export class TagDiffStreamFilter extends BaseFilter {
 
         // removedTags can be null or undefined.
         if (removedTags) {
-            filteredRemovedTags = Object.entries(removedTags).filter(d =>
+            filteredRemovedTags = Object.entries(removedTags).filter((d) =>
                 this._deviceIds.has(d)
             );
         }
@@ -194,7 +224,7 @@ export class TagDiffStreamFilter extends BaseFilter {
 
         return {
             tags: filteredTags,
-            removedTags: filteredRemovedTags
+            removedTags: filteredRemovedTags,
         };
     }
 }
@@ -213,9 +243,7 @@ export class TagInitialStateFilter extends BaseFilter {
         super();
 
         this._deviceIds = null;
-        ({
-            deviceIds: this._deviceIds
-        } = filters);
+        ({ deviceIds: this._deviceIds } = filters);
 
         if (this._deviceIds) {
             this._deviceIds = new Set(this._deviceIds);
@@ -236,7 +264,7 @@ export class TagInitialStateFilter extends BaseFilter {
                 if (!this._deviceIds.has(+deviceId)) return prev;
                 return {
                     ...prev,
-                    [deviceId]: data
+                    [deviceId]: data,
                 };
             },
             {}

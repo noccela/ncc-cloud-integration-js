@@ -1,20 +1,21 @@
 import { DEFAULT_OPTIONS, EVENT_TYPES } from "../constants/constants.js";
 import {
     DEFAULT_AUTH_ORIGIN,
-    DEFAULT_API_HTTP_ORIGIN
+    DEFAULT_API_HTTP_ORIGIN,
 } from "../constants/paths.js";
 import {
     getUniqueId,
     validateAccountAndSite,
     validateOptions,
-    waitAsync
+    waitAsync,
 } from "../utils/utils.js";
 import { RobustAuthenticatedWSChannel } from "./connectionhandler.js";
 import {
     getFilteredCallback,
     TagInitialStateFilter,
     LocationUpdateFilter,
-    TagDiffStreamFilter
+    TagDiffStreamFilter,
+    TwrDataFilter,
 } from "./filters.js";
 import { Dependencies, RegisteredEvent } from "./models.js";
 import { ArgumentException } from "../utils/exceptions.js";
@@ -55,7 +56,7 @@ export class EventChannel {
         /** @type {import("../constants/constants").GlobalOptions} */
         const options = {
             ...DEFAULT_OPTIONS,
-            ...userOptions
+            ...userOptions,
         };
         this._options = options;
         this._origin = httpOrigin;
@@ -63,15 +64,16 @@ export class EventChannel {
         // Create logger functions that call all registered loggers.
         /** @type {import("../constants/constants").Logger} */
         const logger = {
-            log: (...objs) => options.loggers.forEach(l => l && l.log(...objs)),
+            log: (...objs) =>
+                options.loggers.forEach((l) => l && l.log(...objs)),
             warn: (...objs) =>
-                options.loggers.forEach(l => l && l.warn(...objs)),
+                options.loggers.forEach((l) => l && l.warn(...objs)),
             error: (...objs) =>
-                options.loggers.forEach(l => l && l.error(...objs)),
+                options.loggers.forEach((l) => l && l.error(...objs)),
             exception: (...objs) =>
-                options.loggers.forEach(l => l && l.exception(...objs)),
+                options.loggers.forEach((l) => l && l.exception(...objs)),
             debug: (...objs) =>
-                options.loggers.forEach(l => l && l.debug(...objs))
+                options.loggers.forEach((l) => l && l.debug(...objs)),
         };
         this._logger = logger;
 
@@ -81,7 +83,7 @@ export class EventChannel {
 
         // Root-level dependency container that can be injected further.
         this._dependencyContainer = new Dependencies({
-            logger: logger
+            logger: logger,
         });
 
         this._connection = new RobustAuthenticatedWSChannel(
@@ -205,7 +207,7 @@ export class EventChannel {
         return this.register(
             EVENT_TYPES["LOCATION_UPDATE"],
             {
-                deviceIds
+                deviceIds,
             },
             callback
         );
@@ -230,7 +232,7 @@ export class EventChannel {
         return this.register(
             EVENT_TYPES["TAG_STATE"],
             {
-                deviceIds
+                deviceIds,
             },
             callback
         );
@@ -250,7 +252,39 @@ export class EventChannel {
         return this.register(
             EVENT_TYPES["TAG_DIFF"],
             {
-                deviceIds
+                deviceIds,
+            },
+            callback
+        );
+    }
+
+    /**
+     * Register to live updates on raw data for TWR measurements.
+     * This data includes:
+     *  - Measured distance from beacon to tag in millimeters.
+     *
+     * @param {(err: String, payload: Object) => void} callback
+     * @param {Number[]} [tagDeviceIds] Tag devices to get updates for. Null
+     * for all tag devices.
+     * @param {Number[]} [beaconDeviceIds] Beacon devices to get measurements
+     * from. Null for all beacons.
+     */
+    async registerTwrStream(
+        callback,
+        tagDeviceIds = null,
+        beaconDeviceIds = null
+    ) {
+        if (tagDeviceIds && tagDeviceIds.constructor !== Array) {
+            throw new ArgumentException("tagDeviceIds");
+        }
+        if (beaconDeviceIds && beaconDeviceIds.constructor !== Array) {
+            throw new ArgumentException("beaconDeviceIds");
+        }
+        return this.register(
+            EVENT_TYPES["TWR_DATA"],
+            {
+                tagDeviceIds,
+                beaconDeviceIds,
             },
             callback
         );
@@ -287,7 +321,7 @@ export class EventChannel {
         filters = filters || {};
 
         const combinedFilters = {
-            ...filters
+            ...filters,
         };
 
         switch (eventType) {
@@ -313,7 +347,7 @@ export class EventChannel {
 
                     const locationUpdateRequest = {
                         action: "registerTagLocation",
-                        payload: filters
+                        payload: filters,
                     };
 
                     await this._connection.sendRequest(
@@ -322,7 +356,7 @@ export class EventChannel {
                     );
                     unregisterRequest = {
                         ...locationUpdateRequest,
-                        action: "unregisterTagLocation"
+                        action: "unregisterTagLocation",
                     };
                 }
 
@@ -349,12 +383,46 @@ export class EventChannel {
 
                     const tagChangeRequest = {
                         action: "registerTagDiffStream",
-                        payload: filters
+                        payload: filters,
                     };
                     await this._connection.sendRequest(uuid, tagChangeRequest);
                     unregisterRequest = {
                         ...tagChangeRequest,
-                        action: "unregisterTagDiffStream"
+                        action: "unregisterTagDiffStream",
+                    };
+                }
+
+                break;
+            case EVENT_TYPES["TWR_DATA"]:
+                {
+                    validateOptions(
+                        filters,
+                        ["tagDeviceIds", "beaconDeviceIds"],
+                        null
+                    );
+                    registeredResponseType = "twrStreamData";
+
+                    const filteredCallback = getFilteredCallback(
+                        TwrDataFilter,
+                        callback,
+                        combinedFilters,
+                        this._dependencyContainer
+                    );
+
+                    this._connection.registerServerCallback(
+                        registeredResponseType,
+                        uuid,
+                        filteredCallback.process.bind(filteredCallback)
+                    );
+
+                    const request = {
+                        action: "registerTwrStream",
+                        payload: filters,
+                    };
+                    await this._connection.sendRequest(uuid, request);
+                    unregisterRequest = {
+                        ...request,
+                        action: "unregisterTwrStream",
                     };
                 }
 
@@ -439,8 +507,8 @@ export class EventChannel {
             {
                 action: "initialTagState",
                 payload: {
-                    deviceIds
-                }
+                    deviceIds,
+                },
             },
             null,
             "initialTagState"
@@ -448,7 +516,7 @@ export class EventChannel {
 
         // Parse the encoded message.
         const filter = new TagInitialStateFilter({
-            deviceIds
+            deviceIds,
         });
         return filter.filter(payload);
     }
@@ -521,7 +589,7 @@ export class EventChannel {
      */
     registerToServerMessageRaw(action, callback) {
         const uuid = getUniqueId();
-        this._connection.registerServerCallback(action, uuid, payload =>
+        this._connection.registerServerCallback(action, uuid, (payload) =>
             // For compability and future-proofing, use Node-convention here too.
             callback(null, payload)
         );
