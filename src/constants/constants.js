@@ -32,6 +32,7 @@ export const DEFAULT_OPTIONS = {
     onMessage: null,
     onClose: null,
     onError: null,
+    onConnect: null,
     processMessages: true,
     requestTimeout: 60000,
     automaticTokenRenewal: true,
@@ -69,6 +70,7 @@ export const UUID_LENGTH = 6;
  * @prop {Function} [onMessage] - Custom callback when a message is received from cloud
  * @prop {Function} [onClose] - Custom callback when socket is closed
  * @prop {Function} [onError] - Custom callback when socket emits error
+ * @prop {Function} [onConnect] - Custom callback when socket is connected
  * @prop {Boolean} [processMessages] - If false, don't handle socket messages in the
  * library, but rather pass them only to user provided callbacks
  * @prop {number} [requestTimeout] - Timeout in ms for request to timeout and reject

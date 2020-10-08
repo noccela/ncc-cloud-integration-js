@@ -45,6 +45,8 @@ export class RequestHandler {
         this._reconnectCallback = reconnectCallback;
 
         // Unpack options.
+        this._clientOnCloseCallback = options.onClose;
+        this._clientOnErrorCallback = options.onError;
         this._defaultTimeout = options.requestTimeout;
         this._timeoutCheckInterval = Math.max(
             this._defaultTimeout / 2 || 0,
@@ -81,7 +83,9 @@ export class RequestHandler {
 
     // Handle socket error.
     _onError({ message }) {
-        // TODO: Inform user?
+        if (typeof this._clientOnErrorCallback === "function") {
+            setTimeout(this._clientOnErrorCallback.bind(null, message), 0);
+        }
         this._logger.error(`Socket error: ${message}`);
     }
 
@@ -91,6 +95,10 @@ export class RequestHandler {
             `Socket closed with code ${code}, ${reason ? ` ${reason}` : ""}`
         );
         this._socket.onmessage = null;
+
+        if (typeof this._clientOnCloseCallback === "function") {
+            setTimeout(this._clientOnCloseCallback.bind(null, code, reason), 0);
+        }
 
         // Reject all waiting handlers to that they are not left hanging forever.
         this._rejectAllWaitingHandlers("socket closed");
@@ -211,8 +219,9 @@ export class RequestHandler {
                 // This happens when cloud sends an unknown message type (not expected)
                 // or a response to a time-outed request.
                 this._logger.warn(
-                    `Got message with no handler: uniqueId/action ${uniqueId ||
-                        action}, status: ${status}`
+                    `Got message with no handler: uniqueId/action ${
+                        uniqueId || action
+                    }, status: ${status}`
                 );
             }
         }
@@ -285,7 +294,7 @@ export class RequestHandler {
         return new Promise((res, rej) => {
             const finalMessage = {
                 ...msg,
-                uniqueId: uuid
+                uniqueId: uuid,
             };
 
             // Attach information and request and reject callbacks to message.
@@ -324,7 +333,7 @@ export class RequestHandler {
 
         const handlerValue = {
             callback: callback,
-            uuid: uuid
+            uuid: uuid,
         };
 
         if (
@@ -351,7 +360,7 @@ export class RequestHandler {
 
         // Filter out matching callbacks.
         this._serverMessageHandlers[action] = handlers.filter(
-            h => h.uuid !== uuid
+            (h) => h.uuid !== uuid
         );
 
         // Delete the key altogether if no listeners remain.

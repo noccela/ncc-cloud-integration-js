@@ -5,7 +5,7 @@ import { RequestHandler } from "./requesthandler.js";
 import {
     authenticate,
     connectWebsocket,
-    scheduleReconnection
+    scheduleReconnection,
 } from "./socketutils.js";
 import { getWebSocket } from "../utils/ponyfills.js";
 import { getNodeDomainForSite } from "../http/site.js";
@@ -149,7 +149,7 @@ class RobustWSChannel {
         const uuid = getUniqueId();
         const request = {
             payload: payload,
-            action: action
+            action: action,
         };
 
         return await this._socketHandler.sendRequest(uuid, request);
@@ -256,9 +256,14 @@ class RobustWSChannel {
         this._lastJwtUsed = jwt;
         this._nextRetryInterval = this._options.retryIntervalMin;
 
+        // Call user-provided connection callback if such exists.
+        if (typeof this._options.onConnect === "function") {
+            setTimeout(this._options.onConnect, 0);
+        }
+
         return {
             tokenExpiration,
-            tokenIssued
+            tokenIssued,
         };
     }
 
@@ -332,8 +337,8 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
         const response = await this._socketHandler.sendRequest(uuid, {
             action: "refreshToken",
             payload: {
-                token: newToken
-            }
+                token: newToken,
+            },
         });
 
         this._logger.log(
@@ -362,7 +367,7 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
             authServerDomain,
             tokenExpiration,
             tokenIssued,
-            getToken
+            getToken,
         } = args;
 
         // Calculate the wait until token should be refreshed, half of the time
@@ -386,14 +391,14 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
             try {
                 const {
                     tokenExpiration,
-                    tokenIssued
+                    tokenIssued,
                 } = await this._refreshToken(authServerDomain, getToken);
 
                 // Schedule next refreshal with new values.
                 this.scheduleTokenRefresh({
                     ...args,
                     tokenExpiration: +tokenExpiration,
-                    tokenIssued: +tokenIssued
+                    tokenIssued: +tokenIssued,
                 });
             } catch (e) {
                 // The authentication might fail for any number of reasons,
@@ -445,7 +450,7 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
                 authServerDomain,
                 tokenExpiration,
                 tokenIssued,
-                getToken
+                getToken,
             });
         }
     }
