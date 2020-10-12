@@ -133,6 +133,34 @@ export class TwrDataFilter extends BaseFilter {
     }
 }
 
+export class ContactTracingUpdateFilter extends BaseFilter {
+    constructor(filters) {
+        super();
+
+        this._deviceIds = null;
+        ({ deviceIds: this._deviceIds } = filters);
+
+        if (this._deviceIds) {
+            this._deviceIds = new Set(this._deviceIds);
+        }
+
+        this.filter = this.filter.bind(this);
+    }
+
+    /** @inheritdoc */
+    filter(payload) {
+        if (!payload) return;
+        if (!Array.isArray(payload)) return;
+        if (!payload.length) return;
+        if (!this._deviceIds) return payload;
+
+        return payload.filter(
+            ({ tag1, tag2 }) =>
+                this._deviceIds.has(tag1) || this._deviceIds.has(tag2)
+        );
+    }
+}
+
 export class LocationUpdateFilter extends BaseFilter {
     constructor(filters) {
         super();

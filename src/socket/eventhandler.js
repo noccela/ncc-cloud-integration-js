@@ -16,6 +16,7 @@ import {
     LocationUpdateFilter,
     TagDiffStreamFilter,
     TwrDataFilter,
+    ContactTracingUpdateFilter,
 } from "./filters.js";
 import { Dependencies, RegisteredEvent } from "./models.js";
 import { ArgumentException } from "../utils/exceptions.js";
@@ -259,6 +260,26 @@ export class EventChannel {
     }
 
     /**
+     * Register to contact tracing updates.
+     *
+     * @param {(err: String, payload: Object) => void} callback
+     * @param {number[]} [deviceIds] Devices to get updates for. If null then
+     * all devides from the site.
+     */
+    async registerContactTracingUpdate(callback, deviceIds = null) {
+        if (deviceIds && deviceIds.constructor !== Array) {
+            throw new ArgumentException("deviceIds");
+        }
+        return this.register(
+            EVENT_TYPES["CONTACT_TRACE_UPDATE"],
+            {
+                deviceIds,
+            },
+            callback
+        );
+    }
+
+    /**
      * Register to live updates on raw data for TWR measurements.
      * This data includes:
      *  - Measured distance from beacon to tag in millimeters.
@@ -427,6 +448,42 @@ export class EventChannel {
                 }
 
                 break;
+            case EVENT_TYPES["CONTACT_TRACE_UPDATE"]:
+                {
+                    validateOptions(
+                        filters,
+                        ["deviceIds"], // TODO: Beacon serial number?
+                        null
+                    );
+
+                    registeredResponseType = "contactTracingUpdate";
+
+                    const filteredCallback = getFilteredCallback(
+                        ContactTracingUpdateFilter,
+                        callback,
+                        combinedFilters,
+                        this._dependencyContainer
+                    );
+
+                    this._connection.registerServerCallback(
+                        registeredResponseType,
+                        uuid,
+                        filteredCallback.process.bind(filteredCallback)
+                    );
+
+                    const request = {
+                        action: "registerContactTracingStream",
+                        payload: filters,
+                    };
+
+                    await this._connection.sendRequest(uuid, request);
+
+                    unregisterRequest = {
+                        ...request,
+                        action: "unregisterContactTracingStream",
+                    };
+                }
+                break;
             case EVENT_TYPES["TAG_STATE"]:
                 {
                     validateOptions(filters, ["deviceIds"], null);
@@ -519,6 +576,35 @@ export class EventChannel {
             deviceIds,
         });
         return filter.filter(payload);
+    }
+
+    /**
+     * @param {{ deviceIds?: number[], start: number, stop?: number }} options
+     */
+    async getContactTracingHistory(
+        { deviceIds = null, start, stop = null } = {
+            start: Date.now() - 24 * 60 * 60 * 1000,
+        }
+    ) {
+        this._validateConnection();
+
+        if (deviceIds && !Array.isArray(deviceIds))
+            throw TypeError("Invalid deviceIds");
+        if (!start) throw TypeError("Start is not provided");
+        if (stop && !Number.isInteger(stop))
+            throw TypeError("Invalid stop, must be integer");
+
+        const uuid = getUniqueId();
+        const payload = await this._connection.sendRequest(uuid, {
+            action: "initialContactTracingState",
+            payload: {
+                deviceIds,
+                start,
+                stop,
+            },
+        });
+
+        return payload;
     }
 
     /**

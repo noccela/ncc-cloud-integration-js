@@ -77,6 +77,8 @@ class RobustWSChannel {
             siteId
         );
 
+        if (!directDomain) throw Error("Received null origin for the site");
+
         const useTls = lbDomain.startsWith("https");
         const protocol = useTls ? "wss://" : "ws://";
         const directOrigin = `${protocol}${directDomain}`;

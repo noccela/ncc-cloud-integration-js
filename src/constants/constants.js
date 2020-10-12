@@ -18,6 +18,8 @@ export const EVENT_TYPES = {
     TAG_STATE: "TAG_STATE",
     TAG_DIFF: "TAG_DIFF",
     TWR_DATA: "TWR_DATA",
+    CONTACT_TRACE_DATA: "CT_HISTORY",
+    CONTACT_TRACE_UPDATE: "CT_UPDATE",
 };
 
 // Default settings that are extended or overridden by user provided ones.
