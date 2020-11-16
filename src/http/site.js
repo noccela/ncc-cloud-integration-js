@@ -56,6 +56,6 @@ export async function getAddress(lbDomain, accountId, siteId, accessToken) {
     return url.href;
 }
 
-function getWebsocketAddress(domain) {
+export function getWebsocketAddress(domain) {
     return new URL(NCC_PATHS["REALTIME_API"], domain);
 }
