@@ -34,3 +34,28 @@ export async function getNodeDomainForSite(
 
     return domain;
 }
+
+// Fetch domain for the site handler and build the
+// websocket URL to connect to.
+export async function getAddress(lbDomain, accountId, siteId, accessToken) {
+    const directDomain = await getNodeDomainForSite(
+        accessToken,
+        lbDomain,
+        accountId,
+        siteId
+    );
+
+    const useTls = lbDomain.startsWith("https");
+    const protocol = useTls ? "wss://" : "ws://";
+    const directOrigin = `${protocol}${directDomain}`;
+
+    const url = getWebsocketAddress(directOrigin);
+    url.searchParams.append("account", accountId);
+    url.searchParams.append("site", siteId);
+
+    return url.href;
+}
+
+export function getWebsocketAddress(domain) {
+    return new URL(NCC_PATHS["REALTIME_API"], domain);
+}

@@ -7,9 +7,8 @@ import {
     connectWebsocket,
     scheduleReconnection,
 } from "./socketutils.js";
+import { getAddress } from "../http/site.js"
 import { getWebSocket } from "../utils/ponyfills.js";
-import { getNodeDomainForSite } from "../http/site.js";
-import { NCC_PATHS } from "../constants/paths.js";
 
 /**
  * Encloses a RequestHandler and provides additional 'robustness'
@@ -25,7 +24,7 @@ class RobustWSChannel {
      * @param {string} domain
      * @param {number} accountId
      * @param {number} siteId
-     * @param {Object} options
+     * @param {import("../constants/constants.js").GlobalOptions} options
      * @param {import("./models").Dependencies} dependencyContainer
      * @memberof RobustWSChannel
      */
@@ -38,12 +37,13 @@ class RobustWSChannel {
             throw Error("Invalid domain");
         }
 
-        this._addressCallback = this._getAddress.bind(
-            this,
-            domain,
-            accountId,
-            siteId
-        );
+        this._addressCallback = (options.getWsAddress || getAddress)
+            .bind(
+                this,
+                domain,
+                accountId,
+                siteId
+            );
 
         this._options = options;
 
@@ -61,33 +61,6 @@ class RobustWSChannel {
         this._dependencyContainer = dependencyContainer;
 
         this._reconnect = this._reconnect.bind(this);
-    }
-
-    _getWebsocketAddress(domain) {
-        return new URL(NCC_PATHS["REALTIME_API"], domain);
-    }
-
-    // Fetch domain for the site handler and build the
-    // websocket URL to connect to.
-    async _getAddress(lbDomain, accountId, siteId, accessToken) {
-        const directDomain = await getNodeDomainForSite(
-            accessToken,
-            lbDomain,
-            accountId,
-            siteId
-        );
-
-        if (!directDomain) throw Error("Received null origin for the site");
-
-        const useTls = lbDomain.startsWith("https");
-        const protocol = useTls ? "wss://" : "ws://";
-        const directOrigin = `${protocol}${directDomain}`;
-
-        const url = this._getWebsocketAddress(directOrigin);
-        url.searchParams.append("account", accountId);
-        url.searchParams.append("site", siteId);
-
-        return url.href;
     }
 
     // Called by socket handler if connection closes unexpectedly.
