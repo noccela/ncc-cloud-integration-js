@@ -50,6 +50,8 @@ export function parseTagLiveData(msg) {
         tagObj["floorId"] = tagData[13];
         tagObj["signalLost"] = tagData[14];
         tagObj["powerSave"] = tagData[15];
+        tagObj["deviceModel"] = tagData[16];
+        tagObj["fwVersion"] = tagData[17];
 
         // Append to result.
         result[tagObj["deviceId"]] = tagObj;
