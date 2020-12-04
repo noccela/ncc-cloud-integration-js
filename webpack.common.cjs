@@ -43,13 +43,6 @@ module.exports = {
         ]
     },
     plugins: [
-        new CleanWebpackPlugin(),
-        new CopyWebpackPlugin([
-            {
-                from: "static",
-                copyUnmodified: true
-            }
-        ]),
         new webpack.BannerPlugin({
             entryOnly: true,
             banner: () =>
