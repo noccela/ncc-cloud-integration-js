@@ -14,6 +14,7 @@ import {
     getFilteredCallback,
     TagInitialStateFilter,
     LocationUpdateFilter,
+    P2pDistanceUpdateFilter,
     TagDiffStreamFilter,
     TwrDataFilter,
     ContactTracingUpdateFilter,
@@ -215,6 +216,28 @@ export class EventChannel {
     }
 
     /**
+     * Register to live P2P distance stream.
+     *
+     * This is an event to to get live P2P distances
+     *
+     * @param {(err: String, payload: Object) => void} callback
+     * @param {Number[]} [deviceIds] Devices to get updates for. If null then
+     * all devides from the site.
+     */
+    async registerP2PDistanceStream(callback, deviceIds = null) {
+        if (deviceIds && deviceIds.constructor !== Array) {
+            throw new ArgumentException("deviceIds");
+        }
+        return this.register(
+            EVENT_TYPES["P2P_DISTANCE_UPDATE"],
+            {
+                deviceIds,
+            },
+            callback
+        );
+    }
+
+    /**
      * Register to initial full state for tags on a given site.
      *
      * The callback will be invoked when first registered and when the connection
@@ -381,6 +404,42 @@ export class EventChannel {
                     };
                 }
 
+                break;
+            case EVENT_TYPES["P2P_DISTANCE_UPDATE"]:
+                {
+                    validateOptions(filters, ["deviceIds"], null);
+                    registeredResponseType = "p2pDistanceUpdate";
+
+
+                    const filteredP2pDistanceUpdateCallback = getFilteredCallback(
+                        P2pDistanceUpdateFilter,
+                        callback,
+                        combinedFilters,
+                        this._dependencyContainer
+                    );
+
+                    this._connection.registerServerCallback(
+                        registeredResponseType,
+                        uuid,
+                        filteredP2pDistanceUpdateCallback.process.bind(
+                            filteredP2pDistanceUpdateCallback
+                        )
+                    );
+
+                    const p2pDistanceUpdateRequest = {
+                        action: "registerP2PDistanceStream",
+                        payload: filters,
+                    };
+
+                    await this._connection.sendRequest(
+                        uuid,
+                        p2pDistanceUpdateRequest
+                    );
+                    unregisterRequest = {
+                        ...p2pDistanceUpdateRequest,
+                        action: "unregisterP2PDistanceStream",
+                    };
+                }
                 break;
             case EVENT_TYPES["TAG_DIFF"]:
                 {

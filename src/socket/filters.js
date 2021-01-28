@@ -199,6 +199,45 @@ export class LocationUpdateFilter extends BaseFilter {
     }
 }
 
+export class P2pDistanceUpdateFilter extends BaseFilter {
+    constructor(filters) {
+        super();
+
+        this._deviceIds = null;
+        ({ deviceIds: this._deviceIds } = filters);
+
+        if (this._deviceIds) {
+            this._deviceIds = new Set(this._deviceIds);
+        }
+
+        this.filter = this.filter.bind(this);
+    }
+
+    /** @inheritdoc */
+    filter(payload) {
+        if (!payload) return;
+
+        const payloadEntries = Object.entries(payload);
+        if (!payloadEntries.length) return;
+
+        if (!this._deviceIds) return payload;
+
+        const filteredResponse = payloadEntries.reduce(
+            (prev, [deviceId, data]) => {
+                if (!this._deviceIds.has(+deviceId)) return prev;
+                return {
+                    ...prev,
+                    [deviceId]: data,
+                };
+            },
+            {}
+        );
+
+        return filteredResponse;
+    }
+}
+
+
 export class TagDiffStreamFilter extends BaseFilter {
     constructor(filters) {
         super();

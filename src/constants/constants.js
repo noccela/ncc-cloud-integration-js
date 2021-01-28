@@ -20,6 +20,7 @@ export const EVENT_TYPES = {
     TWR_DATA: "TWR_DATA",
     CONTACT_TRACE_DATA: "CT_HISTORY",
     CONTACT_TRACE_UPDATE: "CT_UPDATE",
+    P2P_DISTANCE_UPDATE: "P2P_DISTANCE_UPDATE",
 };
 
 // Default settings that are extended or overridden by user provided ones.
