@@ -334,6 +334,22 @@ export class EventChannel {
         );
     }
 
+     /**
+     * Register to site information.
+     *
+     * The callback will be invoked when first registered and when the connection
+     * is re-established.
+     *
+     * @param {(err: String, payload: Object) => void} callback
+     */
+    async registerSiteInformation(callback) {
+        return this.register(
+            EVENT_TYPES["SITE_INFO"],
+            {},
+            callback
+        );
+    }
+
     /**
      * Register to an API event, such as location update and tag metadata streams.
      * Provide filters for site and request-specific filters and a callback to
@@ -560,6 +576,19 @@ export class EventChannel {
                 }
 
                 break;
+            case EVENT_TYPES["SITE_INFO"]:
+                {
+                    registeredResponseType = "getSite";
+
+                    const initialResponse = await this.getSite();
+
+                    // Register to future tag state messages.
+                    // New is sent when for example socket is re-established.
+                    registeredResponseType = "getSite";
+
+                    callback(null, initialResponse);
+                }
+                break;
             default:
                 throw Error(
                     `Invalid event type ${eventType}, available types ${Object.keys(
@@ -636,6 +665,29 @@ export class EventChannel {
         });
         return filter.filter(payload);
     }
+
+    /**
+     * Fetch initial state for tags on the site.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+         async getSite() {
+            this._validateConnection();
+    
+            const payload = await this._connection.sendRequest(
+                "getSite",
+                {
+                    action: "getSite",
+                    payload: { },
+                },
+                null,
+                "getSite"
+            );
+    
+            return payload;
+        }
+    
 
     /**
      * @param {{ deviceIds?: number[], start: number, stop?: number }} options
