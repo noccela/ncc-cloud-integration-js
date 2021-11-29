@@ -1,14 +1,30 @@
 {
     "compilerOptions": {
-        "module": "CommonJS",
-        "target": "es2016",
+        "outDir": "./dest",
+        "target": "es2017",
+        "module": "esnext",
         "jsx": "preserve",
+        "useUnknownInCatchVariables": true,
+        "noUnusedParameters": true,
+        "strictBindCallApply": true,
+        "strictPropertyInitialization": true,
+        "noUnusedLocals": true,
+        "noPropertyAccessFromIndexSignature": true,
+        "noUncheckedIndexedAccess":true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noFallthroughCasesInSwitch": true,
+        "strictNullChecks": true,
+        "exactOptionalPropertyTypes": true,
+        "alwaysStrict": true,
+        "allowUnreachableCode": false,
+        "allowUnusedLabels": false,
+        "noImplicitAny": true,
+        "declaration": true,
         // Enable TS type checking in vanilla JS.
         "checkJs": true,
         "allowJs": true,
-        // Don't actually emit anything, because this is vanilla JS.
-        "noEmit": true,
-        "noImplicitThis": true
+        "moduleResolution": "node"
     },
     "include": [
         "src/**/*"

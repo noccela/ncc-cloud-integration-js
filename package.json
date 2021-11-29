@@ -1,14 +1,14 @@
 {
-    "name": "@noccela/ncc-cloud-integration",
+    "name": "@noccela/ncc-cloud-integration-js",
     "version": "2.0.0",
-    "description": "Communicate with Noccela external endpoints using JS",
+    "description": "Communicate with Noccela external endpoints using TS",
     "private": true,
-    "main": "src/index.js",
-    "module": "src/index.js",
+    "main": "dest/index.js",
+    "module": "dest/index.js",
     "type": "module",
     "files": [
-        "dist/**/*.js",
-        "src/**/*.js"
+        "dist/**/*.ts",
+        "src/**/*.ts"
     ],
     "scripts": {
         "test": "exit 1",

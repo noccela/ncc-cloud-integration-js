@@ -5,6 +5,6 @@ module.exports = merge(common, {
     mode: "production",
     target: "node",
     entry: {
-        "ncc.node.min": "./src/index-wp.js"
+        "ncc.node.min": "./dest/index-wp.js"
     }
 });
