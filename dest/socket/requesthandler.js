@@ -143,7 +143,7 @@ export class RequestHandler {
             cloudResponse.action = null;
         }
         const handler = this._requestHandlers[cloudResponse.uniqueId];
-        let serverHandlers = null;
+        let serverHandlers = undefined;
         if (cloudResponse.action != null)
             serverHandlers = this._serverMessageHandlers[cloudResponse.action];
         if (!skipHandlerCheck) {

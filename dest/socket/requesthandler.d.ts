@@ -68,7 +68,7 @@ export declare class RequestHandler {
      * @param {import("./filters").FilteredCallback} callback Callback to be
      * invoked when a relevant message is received.
      */
-    registerServerCallback(action: string, uuid: string, callback: (err: string, payload: object) => void): void;
+    registerServerCallback(action: string, uuid: string, callback: (payload: object) => void): void;
     /**
      * Remove a registered server message callback.
      *

@@ -165,7 +165,6 @@ export class RequestHandler {
             }
             return;
         }
-        
         const statusOk = cloudResponse.status === WS_MSG_CONSTANTS["CLOUD_RESPONSE_OK"];
 
         // For special cases, don't check for handler.
@@ -186,10 +185,10 @@ export class RequestHandler {
             cloudResponse.action = null;
         }
 
-        const handler = this._requestHandlers[cloudResponse.uniqueId];
-        let serverHandlers: any | null = null;
+        const handler: TrackedRequest | undefined = this._requestHandlers[cloudResponse.uniqueId];
+        let serverHandlers: Types.ServerMessageHandler[] | undefined = undefined;
         if (cloudResponse.action != null) serverHandlers = this._serverMessageHandlers[cloudResponse.action];
-
+        
         if (!skipHandlerCheck) {
             // Call matching single-shot handler or persistent server message
             // listener.
@@ -346,7 +345,7 @@ export class RequestHandler {
      * @param {import("./filters").FilteredCallback} callback Callback to be
      * invoked when a relevant message is received.
      */
-    registerServerCallback(action: string, uuid: string, callback: (err: string, payload: object) => void): void {
+    registerServerCallback(action: string, uuid: string, callback: (payload: object) => void): void {
         if (!action) throw Error(`Invalid action '${action}'`);
         if (!uuid) throw Error(`Invalid uuid '${uuid}'`);
 

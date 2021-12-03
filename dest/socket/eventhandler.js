@@ -376,7 +376,7 @@ export class EventChannel {
                     // New is sent when for example socket is re-established.
                     registeredResponseType = "initialTagState";
                     if (initialResponse != null)
-                        regRequest.callback(null, initialResponse);
+                        regRequest.callback(initialResponse);
                 }
                 break;
             case EVENT_TYPES["SITE_INFO"]:
@@ -388,7 +388,7 @@ export class EventChannel {
                     registeredResponseType = "getSite";
                     if (initialResponse != null) {
                         const response = initialResponse.payload;
-                        regRequest.callback(null, response);
+                        regRequest.callback(response);
                     }
                 }
                 break;
@@ -540,9 +540,9 @@ export class EventChannel {
      */
     registerToServerMessageRaw(action, callback) {
         const uuid = getUniqueId();
-        this._connection.registerServerCallback(action, uuid, (err, payload) => 
+        this._connection.registerServerCallback(action, uuid, (payload) => 
         // For compability and future-proofing, use Node-convention here too.
-        callback(err, payload));
+        callback(payload));
         return uuid;
     }
     /**

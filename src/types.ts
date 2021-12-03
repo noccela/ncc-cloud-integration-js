@@ -173,7 +173,7 @@ export type AuthenticateResult = {
   export type RegisterRequest = {
     eventType: string,
     filter: MessageFilter,
-    callback: (err:string | null, payload: object) => void,
+    callback: (payload: object) => void,
     uuid: string | null
   };
 
@@ -351,6 +351,6 @@ export type AuthenticateResult = {
   };
 
   export type ServerMessageHandler = {
-    callback: (err: string, payload: object) => void,
+    callback: (payload: object) => void,
     uuid: string
   };

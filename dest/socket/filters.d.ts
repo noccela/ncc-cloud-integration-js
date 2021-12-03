@@ -1,8 +1,8 @@
 import * as Types from "../types.js";
 import { Dependencies } from "./models.js";
-export declare function getFilteredCallback(filterClass: typeof BaseFilter, callback: (err: string, payloa: object) => void, filters: Types.MessageFilter, dependencies: Dependencies): FilteredCallback;
+export declare function getFilteredCallback(filterClass: typeof BaseFilter, callback: (payloa: object) => void, filters: Types.MessageFilter, dependencies: Dependencies): FilteredCallback;
 export declare class FilteredCallback {
-    callback: (err: string | null, payload: object | null) => void;
+    callback: (payload: object | null) => void;
     filterObj: BaseFilter;
     _logger: Types.ConsoleLogger | null;
     /**
@@ -11,8 +11,8 @@ export declare class FilteredCallback {
      * @param {BaseFilter} filter
      * @param {import("./models").Dependencies} dependencies
      */
-    constructor(callback: (err: string | null, payloa: object | null) => void, filter: BaseFilter, dependencies: Dependencies);
-    process(_: string, payload: object): void;
+    constructor(callback: (payloa: object | null) => void, filter: BaseFilter, dependencies: Dependencies);
+    process(payload: object): void;
 }
 /**
  * Callback wrapped with a filter for server messages.

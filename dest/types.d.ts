@@ -154,7 +154,7 @@ export interface ContactTracingUpdateItem {
 export declare type RegisterRequest = {
     eventType: string;
     filter: MessageFilter;
-    callback: (err: string | null, payload: object) => void;
+    callback: (payload: object) => void;
     uuid: string | null;
 };
 export declare type SiteInformationResponse = {
@@ -311,7 +311,7 @@ export declare type P2PButtonActionConfig = {
     Action: number;
 };
 export declare type ServerMessageHandler = {
-    callback: (err: string, payload: object) => void;
+    callback: (payload: object) => void;
     uuid: string;
 };
 export {};

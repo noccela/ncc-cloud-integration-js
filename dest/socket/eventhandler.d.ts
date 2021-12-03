@@ -74,7 +74,7 @@ export declare class EventChannel {
      * @param {Number[]} [deviceIds] Devices to get updates for. If null then
      * all devides from the site.
      */
-    registerLocationUpdate(callback: (err: string | null, payload: Types.LocationUpdateResponse) => void, deviceIds?: number[] | null): Promise<string>;
+    registerLocationUpdate(callback: (payload: Types.LocationUpdateResponse) => void, deviceIds?: number[] | null): Promise<string>;
     /**
      * Register to live P2P distance stream.
      *
@@ -84,7 +84,7 @@ export declare class EventChannel {
      * @param {Number[]} [deviceIds] Devices to get updates for. If null then
      * all devides from the site.
      */
-    registerP2PDistanceStream(callback: (err: string | null, payload: Types.P2PDistanceUpdateResponse) => void, deviceIds?: number[] | null): Promise<string>;
+    registerP2PDistanceStream(callback: (payload: Types.P2PDistanceUpdateResponse) => void, deviceIds?: number[] | null): Promise<string>;
     /**
      * Register to initial full state for tags on a given site.
      *
@@ -97,7 +97,7 @@ export declare class EventChannel {
      * @param {Number[]} [deviceIds] Devices to get updates for. If null then
      * all devides from the site.
      */
-    registerInitialTagState(callback: (err: string | null, payload: Types.TagInitialStateResponse) => void, deviceIds?: number[] | null): Promise<string>;
+    registerInitialTagState(callback: (payload: Types.TagInitialStateResponse) => void, deviceIds?: number[] | null): Promise<string>;
     /**
      * Register to incremental updates for tags' state on a given site.
      *
@@ -105,7 +105,7 @@ export declare class EventChannel {
      * @param {Number[]} [deviceIds] Devices to get updates for. If null then
      * all devides from the site.
      */
-    registerTagDiffStream(callback: (err: string | null, payload: Types.TagDiffResponse) => void, deviceIds?: number[] | null): Promise<string>;
+    registerTagDiffStream(callback: (payload: Types.TagDiffResponse) => void, deviceIds?: number[] | null): Promise<string>;
     /**
      * Register to contact tracing updates.
      *
@@ -113,7 +113,7 @@ export declare class EventChannel {
      * @param {number[]} [deviceIds] Devices to get updates for. If null then
      * all devides from the site.
      */
-    registerContactTracingUpdate(callback: (err: string | null, payload: Types.ContactTracingUpdateResponse) => void, deviceIds?: number[] | null): Promise<string>;
+    registerContactTracingUpdate(callback: (payload: Types.ContactTracingUpdateResponse) => void, deviceIds?: number[] | null): Promise<string>;
     /**
      * Register to live updates on raw data for TWR measurements.
      * This data includes:
@@ -125,7 +125,7 @@ export declare class EventChannel {
      * @param {Number[]} [beaconDeviceIds] Beacon devices to get measurements
      * from. Null for all beacons.
      */
-    registerTwrStream(callback: (err: string, payload: Types.TwrDataResponse) => void, tagDeviceIds?: number[] | null, beaconDeviceIds?: number[] | null): Promise<string>;
+    registerTwrStream(callback: (payload: Types.TwrDataResponse) => void, tagDeviceIds?: number[] | null, beaconDeviceIds?: number[] | null): Promise<string>;
     /**
     * Register to site information.
     *
@@ -134,7 +134,7 @@ export declare class EventChannel {
     *
     * @param {(err: String, payload: Object) => void} callback
     */
-    registerSiteInformation(callback: (err: string, payload: Types.SiteInformationResponse) => void): Promise<string>;
+    registerSiteInformation(callback: (payload: Types.SiteInformationResponse) => void): Promise<string>;
     /**
      * Register to an API event, such as location update and tag metadata streams.
      * Provide filters for site and request-specific filters and a callback to
@@ -151,7 +151,7 @@ export declare class EventChannel {
      * @memberof EventChannel
      * @preserve
      */
-    register(eventType: string, filters: Types.MessageFilter, callback: (err: string | null, payload: object) => void, requestUuid?: string | null): Promise<string>;
+    register(eventType: string, filters: Types.MessageFilter, callback: (payload: object) => void, requestUuid?: string | null): Promise<string>;
     /**
      * Fetch initial state for tags on the site.
      *
@@ -202,7 +202,7 @@ export declare class EventChannel {
      * @param {string} action Action of server sent message to bind to.
      * @param {(err: string, payload: object) => void} callback
      */
-    registerToServerMessageRaw(action: string, callback: (err: string, payload: object) => void): string;
+    registerToServerMessageRaw(action: string, callback: (payload: object) => void): string;
     /**
      * Directly remove a listener from socket, registered with
      * registerToServerMessageRaw.

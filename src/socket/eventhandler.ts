@@ -205,7 +205,7 @@ export class EventChannel {
      * @param {Number[]} [deviceIds] Devices to get updates for. If null then
      * all devides from the site.
      */
-    async registerLocationUpdate(callback: (err: string | null, payload: Types.LocationUpdateResponse) => void, deviceIds: number[] | null = null): Promise<string> {
+    async registerLocationUpdate(callback: (payload: Types.LocationUpdateResponse) => void, deviceIds: number[] | null = null): Promise<string> {
         if (deviceIds && deviceIds.constructor !== Array) {
             throw new ArgumentException("deviceIds");
         }
@@ -228,7 +228,7 @@ export class EventChannel {
      * @param {Number[]} [deviceIds] Devices to get updates for. If null then
      * all devides from the site.
      */
-    async registerP2PDistanceStream(callback: (err: string | null, payload: Types.P2PDistanceUpdateResponse) => void, deviceIds: number[] | null = null): Promise<string> {
+    async registerP2PDistanceStream(callback: (payload: Types.P2PDistanceUpdateResponse) => void, deviceIds: number[] | null = null): Promise<string> {
         if (deviceIds && deviceIds.constructor !== Array) {
             throw new ArgumentException("deviceIds");
         }
@@ -254,7 +254,7 @@ export class EventChannel {
      * @param {Number[]} [deviceIds] Devices to get updates for. If null then
      * all devides from the site.
      */
-    async registerInitialTagState(callback: (err: string | null, payload: Types.TagInitialStateResponse) => void, deviceIds: number[] | null = null): Promise<string> {
+    async registerInitialTagState(callback: (payload: Types.TagInitialStateResponse) => void, deviceIds: number[] | null = null): Promise<string> {
         if (deviceIds && deviceIds.constructor !== Array) {
             throw new ArgumentException("deviceIds");
         }
@@ -275,7 +275,7 @@ export class EventChannel {
      * @param {Number[]} [deviceIds] Devices to get updates for. If null then
      * all devides from the site.
      */
-    async registerTagDiffStream(callback: (err: string | null, payload: Types.TagDiffResponse) => void, deviceIds: number[] | null = null): Promise<string> {
+    async registerTagDiffStream(callback: (payload: Types.TagDiffResponse) => void, deviceIds: number[] | null = null): Promise<string> {
         if (deviceIds && deviceIds.constructor !== Array) {
             throw new ArgumentException("deviceIds");
         }
@@ -296,7 +296,7 @@ export class EventChannel {
      * @param {number[]} [deviceIds] Devices to get updates for. If null then
      * all devides from the site.
      */
-    async registerContactTracingUpdate(callback: (err: string | null, payload: Types.ContactTracingUpdateResponse) => void, deviceIds: number[] | null = null): Promise<string> {
+    async registerContactTracingUpdate(callback: (payload: Types.ContactTracingUpdateResponse) => void, deviceIds: number[] | null = null): Promise<string> {
         if (deviceIds && deviceIds.constructor !== Array) {
             throw new ArgumentException("deviceIds");
         }
@@ -321,7 +321,7 @@ export class EventChannel {
      * @param {Number[]} [beaconDeviceIds] Beacon devices to get measurements
      * from. Null for all beacons.
      */
-    async registerTwrStream(callback: (err: string, payload: Types.TwrDataResponse) => void, tagDeviceIds: number[] | null = null, beaconDeviceIds: number[] | null = null): Promise<string> {
+    async registerTwrStream(callback: (payload: Types.TwrDataResponse) => void, tagDeviceIds: number[] | null = null, beaconDeviceIds: number[] | null = null): Promise<string> {
         if (tagDeviceIds && tagDeviceIds.constructor !== Array) {
             throw new ArgumentException("tagDeviceIds");
         }
@@ -348,7 +348,7 @@ export class EventChannel {
      *
      * @param {(err: String, payload: Object) => void} callback
      */
-    async registerSiteInformation(callback: (err: string, payload: Types.SiteInformationResponse) => void): Promise<string> {
+    async registerSiteInformation(callback: (payload: Types.SiteInformationResponse) => void): Promise<string> {
         const filter: Types.MessageFilter = {
             deviceIds: null
         }
@@ -375,7 +375,7 @@ export class EventChannel {
      * @memberof EventChannel
      * @preserve
      */
-    async register(eventType: string, filters: Types.MessageFilter, callback: (err: string | null, payload: object) => void, requestUuid: string | null = null): Promise<string> {
+    async register(eventType: string, filters: Types.MessageFilter, callback: (payload: object) => void, requestUuid: string | null = null): Promise<string> {
         this._validateConnection();
 
         // Create UUID to track event and request or use provided one.
@@ -588,7 +588,7 @@ export class EventChannel {
                     // New is sent when for example socket is re-established.
                     registeredResponseType = "initialTagState";
 
-                    if (initialResponse != null) regRequest.callback(null, initialResponse);
+                    if (initialResponse != null) regRequest.callback(initialResponse);
                 }
 
                 break;
@@ -603,7 +603,7 @@ export class EventChannel {
                     registeredResponseType = "getSite";
                     if (initialResponse != null){
                         const response: Types.SiteInformationResponse = initialResponse.payload as Types.SiteInformationResponse;
-                        regRequest.callback(null, response);
+                        regRequest.callback(response);
                     }
                    
                 }
@@ -794,11 +794,11 @@ export class EventChannel {
      * @param {string} action Action of server sent message to bind to.
      * @param {(err: string, payload: object) => void} callback
      */
-    registerToServerMessageRaw(action: string, callback: (err: string, payload: object) => void): string {
+    registerToServerMessageRaw(action: string, callback: (payload: object) => void): string {
         const uuid = getUniqueId();
-        this._connection.registerServerCallback(action, uuid, (err: string, payload: object) =>
+        this._connection.registerServerCallback(action, uuid, (payload: object) =>
             // For compability and future-proofing, use Node-convention here too.
-            callback(err, payload)
+            callback(payload)
         );
         return uuid;
     }

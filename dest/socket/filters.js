@@ -31,7 +31,7 @@ export class FilteredCallback {
         ({ logger: this._logger } = dependencies);
     }
     // Filter messages and pass on to callback.
-    process(_, payload) {
+    process(payload) {
         var _a;
         if (!payload)
             return;
@@ -59,7 +59,7 @@ export class FilteredCallback {
         setTimeout(() => {
             var _a;
             try {
-                this.callback(null, filteredMsg);
+                this.callback(filteredMsg);
             }
             catch (e) {
                 if (e instanceof Error) {

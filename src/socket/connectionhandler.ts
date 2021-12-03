@@ -257,7 +257,7 @@ class RobustWSChannel {
     }
 
     /** @see {@link RequestHandler#registerServerCallback} */
-    registerServerCallback(registeredResponseType: string, uuid: string, callback: (err: string, payload: object) => void): void {
+    registerServerCallback(registeredResponseType: string, uuid: string, callback: (payload: object) => void): void {
         this._socketHandler?.registerServerCallback(
             registeredResponseType,
             uuid,

@@ -5,7 +5,7 @@ export class RegisteredEvent {
     /**
      * @param {string} eventType
      * @param {string} responseType
-     * @param {(err: string, payload: Object) => void} callback
+     * @param {(payload: Object) => void} callback
      * @param {Object[]} args
      */
     constructor(eventType, responseType, callback, args, unregisterRequest) {

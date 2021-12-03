@@ -2,22 +2,22 @@ import * as Types from "../types.js";
 export declare class RegisteredEvent {
     _eventType: string;
     _responseType: string;
-    _callback: (err: string | null, payload: object) => void;
+    _callback: (payload: object) => void;
     _args: Types.RegisterRequest;
     _unregisterRequest: Types.Request | null;
     _failedAttempts: number;
     /**
      * @param {string} eventType
      * @param {string} responseType
-     * @param {(err: string, payload: Object) => void} callback
+     * @param {(payload: Object) => void} callback
      * @param {Object[]} args
      */
-    constructor(eventType: string, responseType: string, callback: (err: string | null, payload: object) => void, args: Types.RegisterRequest, unregisterRequest: Types.Request | null);
+    constructor(eventType: string, responseType: string, callback: (payload: object) => void, args: Types.RegisterRequest, unregisterRequest: Types.Request | null);
     get failedAttempts(): number;
     set failedAttempts(value: number);
     get eventType(): string;
     get responseType(): string;
-    get callback(): (err: string | null, payload: object) => void;
+    get callback(): (payload: object) => void;
     get args(): Types.RegisterRequest;
     get unregisterRequest(): Types.Request | null;
 }

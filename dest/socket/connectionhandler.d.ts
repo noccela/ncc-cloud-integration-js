@@ -74,7 +74,7 @@ declare class RobustWSChannel {
      */
     connect(jwt: string): Promise<Types.AuthenticateResult | null>;
     /** @see {@link RequestHandler#registerServerCallback} */
-    registerServerCallback(registeredResponseType: string, uuid: string, callback: (err: string, payload: object) => void): void;
+    registerServerCallback(registeredResponseType: string, uuid: string, callback: (payload: object) => void): void;
     /** @see {@link RequestHandler#removeServerCallback} */
     unregisterServerCallback(action: string, uuid: string): void;
     /** @see {@link RequestHandler#sendRequest} */
