@@ -8,7 +8,8 @@
     "type": "module",
     "files": [
         "dist/**/*.ts",
-        "src/**/*.ts"
+        "src/**/*.ts",
+        "dest/**/*.js"
     ],
     "scripts": {
         "test": "exit 1",
