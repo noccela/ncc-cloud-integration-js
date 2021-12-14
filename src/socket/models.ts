@@ -7,7 +7,7 @@ import * as Types from "../types.js";
 export class RegisteredEvent {
 	public _eventType: string;
 	public _responseType: string;
-	public _callback: (payload: object) => void;
+	public _callback: (err: string | null, payload: object) => void;
 	public _args: Types.RegisterRequest;
 	public _unregisterRequest: Types.Request | null;
 	public _failedAttempts: number;
@@ -18,7 +18,7 @@ export class RegisteredEvent {
      * @param {(payload: Object) => void} callback
      * @param {Object[]} args
      */
-    constructor(eventType: string, responseType: string, callback: (payload: object) => void, args: Types.RegisterRequest, unregisterRequest: Types.Request | null) {
+    constructor(eventType: string, responseType: string, callback: (err: string | null, payload: object) => void, args: Types.RegisterRequest, unregisterRequest: Types.Request | null) {
         this._eventType = eventType;
         this._responseType = responseType;
         this._callback = callback;
@@ -43,7 +43,7 @@ export class RegisteredEvent {
         return this._responseType;
     }
 
-    get callback(): (payload: object) => void {
+    get callback(): (err: string | null, payload: object) => void {
         return this._callback;
     }
 

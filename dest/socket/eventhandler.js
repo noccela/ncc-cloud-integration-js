@@ -286,7 +286,6 @@ export class EventChannel {
         // The type of the server response message, need to track this
         // to later unregister it.
         let registeredResponseType = null;
-        //TODO!!
         let unregisterRequest = null;
         // Set default filter object.
         regRequest.filter = regRequest.filter || { deviceIds: null };
@@ -376,7 +375,7 @@ export class EventChannel {
                     // New is sent when for example socket is re-established.
                     registeredResponseType = "initialTagState";
                     if (initialResponse != null)
-                        regRequest.callback(initialResponse);
+                        regRequest.callback(null, initialResponse);
                 }
                 break;
             case EVENT_TYPES["SITE_INFO"]:
@@ -388,7 +387,7 @@ export class EventChannel {
                     registeredResponseType = "getSite";
                     if (initialResponse != null) {
                         const response = initialResponse.payload;
-                        regRequest.callback(response);
+                        regRequest.callback(null, response);
                     }
                 }
                 break;

@@ -4,7 +4,7 @@ import * as Types from "../types.js";
 import { Dependencies } from "./models.js";
 
 
-export function getFilteredCallback(filterClass: typeof BaseFilter, callback: (payloa: object) => void, filters: Types.MessageFilter, dependencies: Dependencies): FilteredCallback {
+export function getFilteredCallback(filterClass: typeof BaseFilter, callback: (err: string | null, payload: object) => void, filters: Types.MessageFilter, dependencies: Dependencies): FilteredCallback {
     if (!filterClass || typeof filterClass !== "function") {
         throw new ArgumentException("filterClass");
     }
@@ -22,7 +22,7 @@ export function getFilteredCallback(filterClass: typeof BaseFilter, callback: (p
 }
 
 export class FilteredCallback {
-	public callback: (payload: object | null) => void;
+	public callback: (err: string | null, payload: object | null) => void;
 	public filterObj: BaseFilter;
 	public _logger: Types.ConsoleLogger | null;
 
@@ -32,7 +32,7 @@ export class FilteredCallback {
      * @param {BaseFilter} filter
      * @param {import("./models").Dependencies} dependencies
      */
-    constructor(callback: (payloa: object | null) => void, filter: BaseFilter, dependencies: Dependencies) {
+    constructor(callback: (err: string | null, payload: object | null) => void, filter: BaseFilter, dependencies: Dependencies) {
         if (!callback || typeof callback !== "function") {
             throw new ArgumentException("callback");
         }
@@ -74,7 +74,7 @@ export class FilteredCallback {
         // know how long it will take.
         setTimeout(() => {
             try {
-                this.callback(filteredMsg);
+                this.callback(null, filteredMsg);
             } catch (e) {
                 if (e instanceof Error) {
                     this._logger?.exception("Error in location update callback", e.message);

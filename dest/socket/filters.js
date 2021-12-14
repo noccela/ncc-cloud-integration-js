@@ -59,7 +59,7 @@ export class FilteredCallback {
         setTimeout(() => {
             var _a;
             try {
-                this.callback(filteredMsg);
+                this.callback(null, filteredMsg);
             }
             catch (e) {
                 if (e instanceof Error) {

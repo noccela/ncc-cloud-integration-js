@@ -154,7 +154,7 @@ export interface ContactTracingUpdateItem {
 export declare type RegisterRequest = {
     eventType: string;
     filter: MessageFilter;
-    callback: (payload: object) => void;
+    callback: (err: string | null, payload: object) => void;
     uuid: string | null;
 };
 export declare type SiteInformationResponse = {
