@@ -9,7 +9,7 @@
     "files": [
         "dist/**/*.ts",
         "src/**/*.ts",
-        "dest/**/*.js"
+        "dest/"
     ],
     "scripts": {
         "test": "exit 1",
