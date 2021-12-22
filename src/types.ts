@@ -91,7 +91,7 @@ export type AuthenticateResult = {
     batteryVoltage: number,
     batteryStatus: number,
     status: number,
-    areas: string,
+    areas: number[],
     wire: boolean,
     reed: boolean,
     isOnline: boolean
@@ -113,7 +113,7 @@ export type AuthenticateResult = {
     name: string,
     batteryStatus: number,
     status: number,
-    areas: string,
+    areas: number[],
     isOnline: boolean
     x: number,
     y: number,
@@ -260,7 +260,7 @@ export type AuthenticateResult = {
     sniffOnly: boolean,
     quarantineRadius: number | null,
     isQuarantine: boolean,
-    tagGorups: number[],
+    tagGroups: number[],
     guards: number[]
     isPlusDenied: boolean,
     suckTagInSeconds: number | null,
