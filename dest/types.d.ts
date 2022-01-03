@@ -81,7 +81,7 @@ export declare type InitialTagState = {
     batteryVoltage: number;
     batteryStatus: number;
     status: number;
-    areas: string;
+    areas: number[];
     wire: boolean;
     reed: boolean;
     isOnline: boolean;
@@ -94,6 +94,7 @@ export declare type InitialTagState = {
     powerSave: boolean;
     deviceModel: string;
     fwVersion: string;
+    strokeCount: number;
 };
 interface TagDiffTags extends Dictionary<TagDiffItem> {
 }
@@ -101,7 +102,7 @@ export declare type TagDiffItem = {
     name: string;
     batteryStatus: number;
     status: number;
-    areas: string;
+    areas: number[];
     isOnline: boolean;
     x: number;
     y: number;
@@ -109,6 +110,7 @@ export declare type TagDiffItem = {
     signalLost: boolean;
     powerSave: boolean;
     fwVersion: string;
+    timestamp: number;
 };
 export declare type TagDiffResponse = {
     tags: TagDiffTags | null;
@@ -233,7 +235,7 @@ export interface LayoutItem extends BaseLayoutItem {
     sniffOnly: boolean;
     quarantineRadius: number | null;
     isQuarantine: boolean;
-    tagGorups: number[];
+    tagGroups: number[];
     guards: number[];
     isPlusDenied: boolean;
     suckTagInSeconds: number | null;

@@ -103,7 +103,8 @@ export type AuthenticateResult = {
     signalLost: boolean,
     powerSave: boolean,
     deviceModel: string,
-    fwVersion: string
+    fwVersion: string,
+    strokeCount: number
   };
 
 
@@ -120,7 +121,8 @@ export type AuthenticateResult = {
     floorId: number,
     signalLost: boolean,
     powerSave: boolean,
-    fwVersion: string
+    fwVersion: string,
+    timestamp: number
   };
 
   export type TagDiffResponse = {

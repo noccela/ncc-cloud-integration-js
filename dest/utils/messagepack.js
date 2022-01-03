@@ -45,6 +45,7 @@ export function parseTagLiveData(msg) {
             powerSave: tagData[15],
             deviceModel: tagData[16],
             fwVersion: tagData[17],
+            strokeCount: tagData[18],
         };
         // Append to result.
         result[did] = tagObj;
