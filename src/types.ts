@@ -122,7 +122,8 @@ export type AuthenticateResult = {
     signalLost: boolean,
     powerSave: boolean,
     fwVersion: string,
-    timestamp: number
+    timestamp: number,
+    strokeCount: number
   };
 
   export type TagDiffResponse = {

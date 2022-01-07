@@ -111,6 +111,7 @@ export declare type TagDiffItem = {
     powerSave: boolean;
     fwVersion: string;
     timestamp: number;
+    strokeCount: number;
 };
 export declare type TagDiffResponse = {
     tags: TagDiffTags | null;
