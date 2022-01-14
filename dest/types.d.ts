@@ -96,6 +96,24 @@ export declare type InitialTagState = {
     fwVersion: string;
     strokeCount: number;
 };
+export interface AlertInitialStateResponse extends Dictionary<Alert> {
+}
+export declare type Alert = {
+    alarmId: number;
+    deviceId: number;
+    alarmType: string;
+    x: number;
+    y: number;
+    timestamp: string;
+    floorId: number | null;
+    areaNames: string[];
+};
+interface AlertDiffAlerts extends Dictionary<Alert> {
+}
+export declare type AlertDiffResponse = {
+    alerts: AlertDiffAlerts | null;
+    removedAlerts: number[] | null;
+};
 interface TagDiffTags extends Dictionary<TagDiffItem> {
 }
 export declare type TagDiffItem = {

@@ -61,3 +61,33 @@ export function parseTagLiveData(msg: string): Types.TagInitialStateResponse {
 
     return result;
 }
+
+export function parseAlertLiveData(msg: string): Types.AlertInitialStateResponse {
+    const payload:object = parseMsgPack(msg);
+
+    const result: Types.AlertInitialStateResponse = {};
+    const alertIds: string[] = Object.keys(payload);
+    if (!alertIds || !alertIds.length) return result;
+
+    // Create tag status objects from decoded MessagePack payload.
+    // MessagePack loses all information about property names, so the array
+    // indices are hard-coded.
+    for (const [alertId, alertData] of Object.entries(payload)) {
+        const aid: number = +alertId;
+        const alertObj: Types.Alert = {
+            alarmId: alertData[0],
+		    deviceId: alertData[1],
+            alarmType: alertData[2],
+		    x: alertData[3],
+            y: alertData[4],
+            timestamp: alertData[6],
+		    floorId: alertData[8],
+            areaNames: alertData[12]
+        };
+        
+        // Append to result.
+        result[aid] = alertObj;
+    }
+
+    return result;
+}

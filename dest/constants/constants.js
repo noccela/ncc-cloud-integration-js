@@ -19,6 +19,8 @@ export const EVENT_TYPES = {
     CONTACT_TRACE_UPDATE: "CT_UPDATE",
     P2P_DISTANCE_UPDATE: "P2P_DISTANCE_UPDATE",
     SITE_INFO: "SITE_INFO",
+    ALERT_STATE: "ALERT_STATE",
+    ALERT_DIFF: "ALERT_DIFF",
 };
 // Default settings that are extended or overridden by user provided ones.
 /** @type GlobalOptions */

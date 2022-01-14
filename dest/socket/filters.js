@@ -1,5 +1,5 @@
 import { ArgumentException, NotImplementedError } from "../utils/exceptions.js";
-import { parseTagLiveData } from "../utils/messagepack.js";
+import { parseTagLiveData, parseAlertLiveData } from "../utils/messagepack.js";
 export function getFilteredCallback(filterClass, callback, filters, dependencies) {
     if (!filterClass || typeof filterClass !== "function") {
         throw new ArgumentException("filterClass");
@@ -225,6 +225,37 @@ export class TagDiffStreamFilter extends BaseFilter {
         return filteredResponse;
     }
 }
+export class AlertDiffStreamFilter extends BaseFilter {
+    constructor(filters) {
+        super(filters);
+        this._filter = filters;
+        this.filter = this.filter.bind(this);
+    }
+    /** @inheritdoc */
+    filter(payload) {
+        if (!payload.alerts && !payload.removedAlerts)
+            return null;
+        if (!this._filter.deviceIds)
+            return payload;
+        const filteredResponse = {
+            alerts: null,
+            removedAlerts: null
+        };
+        if (payload.alerts) {
+            for (var alarmId in payload.alerts) {
+                const alert = payload.alerts[alarmId];
+                if (alert == null)
+                    continue;
+                if (!this._filter.deviceIds.includes(alert.deviceId))
+                    continue;
+                if (filteredResponse.alerts == null)
+                    filteredResponse.alerts = {};
+                filteredResponse.alerts[alarmId] = alert;
+            }
+        }
+        return filteredResponse;
+    }
+}
 // Filter that does nothing special, just passes the message
 // unmodified.
 export class NoOpFilter extends BaseFilter {
@@ -253,6 +284,30 @@ export class TagInitialStateFilter extends BaseFilter {
             if (!obj || !this._filter.deviceIds.includes(+deviceId))
                 continue;
             filteredResponse[deviceId] = obj;
+        }
+        return filteredResponse;
+    }
+}
+export class AlertInitialStateFilter extends BaseFilter {
+    constructor(filters) {
+        super(filters);
+        this._filter = filters;
+        this.filter = this.filter.bind(this);
+    }
+    /** @inheritdoc */
+    filter(initialState) {
+        // Parse encoded response.
+        let filteredResponse = {};
+        if (!initialState)
+            return filteredResponse;
+        let response = parseAlertLiveData(initialState.payload);
+        if (this._filter.deviceIds == null)
+            return response;
+        for (var alertId in response) {
+            let obj = response[alertId];
+            if (!obj || !this._filter.deviceIds.includes(obj.deviceId))
+                continue;
+            filteredResponse[alertId] = obj;
         }
         return filteredResponse;
     }

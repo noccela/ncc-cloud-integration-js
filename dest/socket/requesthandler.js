@@ -142,6 +142,22 @@ export class RequestHandler {
             cloudResponse.uniqueId = cloudResponse.action;
             cloudResponse.action = null;
         }
+        // TODO: Find a more elegant way to do this.
+        if (cloudResponse.uniqueId === "getInitialAlertState" && !statusOk) {
+            // Initial tag state response is of different type if the request
+            // is successful, but if it fails it returns with the original uniqueId.
+            cloudResponse.uniqueId = "initialAlertState";
+        }
+        else if (cloudResponse.uniqueId === "getInitialAlertState" && statusOk) {
+            // This is expected, don't complain.
+            skipHandlerCheck = true;
+        }
+        else if (cloudResponse.action === "initialAlertState" && statusOk) {
+            // Server message 'initialTagState' is one-off and has a matching
+            // request callback.
+            cloudResponse.uniqueId = cloudResponse.action;
+            cloudResponse.action = null;
+        }
         const handler = this._requestHandlers[cloudResponse.uniqueId];
         let serverHandlers = undefined;
         if (cloudResponse.action != null)

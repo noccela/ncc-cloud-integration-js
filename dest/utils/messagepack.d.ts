@@ -6,3 +6,4 @@ import * as Types from "../types";
  */
 export declare function parseMsgPack(baseMsg: string): object;
 export declare function parseTagLiveData(msg: string): Types.TagInitialStateResponse;
+export declare function parseAlertLiveData(msg: string): Types.AlertInitialStateResponse;

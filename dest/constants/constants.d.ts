@@ -17,6 +17,8 @@ export declare const EVENT_TYPES: {
     CONTACT_TRACE_UPDATE: string;
     P2P_DISTANCE_UPDATE: string;
     SITE_INFO: string;
+    ALERT_STATE: string;
+    ALERT_DIFF: string;
 };
 /** @type GlobalOptions */
 export declare const DEFAULT_OPTIONS: UserOptions;

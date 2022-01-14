@@ -2,7 +2,7 @@ import { DEFAULT_OPTIONS, EVENT_TYPES } from "../constants/constants.js";
 import { DEFAULT_AUTH_ORIGIN, DEFAULT_API_HTTP_ORIGIN, } from "../constants/paths.js";
 import { getUniqueId, validateAccountAndSite, validateOptions, waitAsync, } from "../utils/utils.js";
 import { RobustAuthenticatedWSChannel } from "./connectionhandler.js";
-import { getFilteredCallback, TagInitialStateFilter, LocationUpdateFilter, P2pDistanceUpdateFilter, TagDiffStreamFilter, TwrDataFilter, ContactTracingUpdateFilter, } from "./filters.js";
+import { getFilteredCallback, TagInitialStateFilter, AlertInitialStateFilter, LocationUpdateFilter, P2pDistanceUpdateFilter, TagDiffStreamFilter, TwrDataFilter, ContactTracingUpdateFilter, AlertDiffStreamFilter, } from "./filters.js";
 import { Dependencies, RegisteredEvent } from "./models.js";
 import { ArgumentException } from "../utils/exceptions.js";
 /**
@@ -202,6 +202,24 @@ export class EventChannel {
         };
         return this.register(EVENT_TYPES["TAG_DIFF"], filter, callback);
     }
+    async registerInitialAlertState(callback, deviceIds = null) {
+        if (deviceIds && deviceIds.constructor !== Array) {
+            throw new ArgumentException("deviceIds");
+        }
+        const filter = {
+            deviceIds: deviceIds
+        };
+        return this.register(EVENT_TYPES["ALERT_STATE"], filter, callback);
+    }
+    async registerAlertDiffStream(callback, deviceIds = null) {
+        if (deviceIds && deviceIds.constructor !== Array) {
+            throw new ArgumentException("deviceIds");
+        }
+        const filter = {
+            deviceIds: deviceIds
+        };
+        return this.register(EVENT_TYPES["ALERT_DIFF"], filter, callback);
+    }
     /**
      * Register to contact tracing updates.
      *
@@ -335,6 +353,21 @@ export class EventChannel {
                     unregisterRequest = Object.assign(Object.assign({}, tagChangeRequest), { action: "unregisterTagDiffStream" });
                 }
                 break;
+            case EVENT_TYPES["ALERT_DIFF"]:
+                {
+                    validateOptions(regRequest.filter, ["deviceIds"], null);
+                    registeredResponseType = "alertDiffStream";
+                    const filteredAlertDiffCallback = getFilteredCallback(AlertDiffStreamFilter, regRequest.callback, regRequest.filter, this._dependencyContainer);
+                    this._connection.registerServerCallback(registeredResponseType, uuid, filteredAlertDiffCallback.process.bind(filteredAlertDiffCallback));
+                    const alertChangeRequest = {
+                        uniqueId: uuid,
+                        action: "registerAlertDiffStream",
+                        payload: regRequest.filter,
+                    };
+                    await this._connection.sendRequest(alertChangeRequest);
+                    unregisterRequest = Object.assign(Object.assign({}, alertChangeRequest), { action: "unregisterAlertDiffStream" });
+                }
+                break;
             case EVENT_TYPES["TWR_DATA"]:
                 {
                     validateOptions(regRequest.filter, ["tagDeviceIds", "beaconDeviceIds"], null);
@@ -374,6 +407,18 @@ export class EventChannel {
                     // Register to future tag state messages.
                     // New is sent when for example socket is re-established.
                     registeredResponseType = "initialTagState";
+                    if (initialResponse != null)
+                        regRequest.callback(null, initialResponse);
+                }
+                break;
+            case EVENT_TYPES["ALERT_STATE"]:
+                {
+                    validateOptions(regRequest.filter, ["deviceIds"], null);
+                    registeredResponseType = "initialAlertState";
+                    const initialResponse = await this.getAlertState(regRequest.filter.deviceIds);
+                    // Register to future tag state messages.
+                    // New is sent when for example socket is re-established.
+                    registeredResponseType = "initialAlertState";
                     if (initialResponse != null)
                         regRequest.callback(null, initialResponse);
                 }
@@ -437,6 +482,35 @@ export class EventChannel {
             return null;
         // Parse the encoded message.
         const filter = new TagInitialStateFilter({
+            deviceIds,
+        });
+        return filter.filter(payload);
+    }
+    /**
+     * Fetch initial state for alerts on the site.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async getAlertState(deviceIds = null) {
+        this._validateConnection();
+        var tenDaysAgo = new Date();
+        tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+        const msg = {
+            uniqueId: "getInitialAlertState",
+            action: "initialAlertState",
+            payload: {
+                dateRanges: [{
+                        start: tenDaysAgo.toISOString(),
+                        end: new Date().toISOString()
+                    }]
+            }
+        };
+        const payload = await this._connection.sendRequest(msg, null, "initialAlertState");
+        if (payload == null)
+            return null;
+        // Parse the encoded message.
+        const filter = new AlertInitialStateFilter({
             deviceIds,
         });
         return filter.filter(payload);
