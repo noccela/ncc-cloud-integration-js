@@ -291,7 +291,7 @@ export class EventChannel {
         );
     }
 
-    async registerInitialAlertState(callback: (err: string | null, payload: Types.TagInitialStateResponse) => void, deviceIds: number[] | null = null): Promise<string> {
+    async registerInitialAlertState(callback: (err: string | null, payload: Types.AlertInitialStateResponse) => void, deviceIds: number[] | null = null): Promise<string> {
         if (deviceIds && deviceIds.constructor !== Array) {
             throw new ArgumentException("deviceIds");
         }

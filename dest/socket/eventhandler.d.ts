@@ -106,7 +106,7 @@ export declare class EventChannel {
      * all devides from the site.
      */
     registerTagDiffStream(callback: (err: string | null, payload: Types.TagDiffResponse) => void, deviceIds?: number[] | null): Promise<string>;
-    registerInitialAlertState(callback: (err: string | null, payload: Types.TagInitialStateResponse) => void, deviceIds?: number[] | null): Promise<string>;
+    registerInitialAlertState(callback: (err: string | null, payload: Types.AlertInitialStateResponse) => void, deviceIds?: number[] | null): Promise<string>;
     registerAlertDiffStream(callback: (err: string | null, payload: Types.AlertDiffResponse) => void, deviceIds?: number[] | null): Promise<string>;
     /**
      * Register to contact tracing updates.
