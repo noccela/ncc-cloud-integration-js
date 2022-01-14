@@ -555,7 +555,9 @@ export class EventChannel {
                     const alertChangeRequest: Types.Request = {
                         uniqueId: uuid,
                         action: "registerAlertDiffStream",
-                        payload: regRequest.filter,
+                        payload: {
+                            alertTypeGroups: [1,2,4]
+                        }
                     };
 
                     await this._connection.sendRequest(alertChangeRequest);

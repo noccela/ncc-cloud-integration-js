@@ -362,7 +362,9 @@ export class EventChannel {
                     const alertChangeRequest = {
                         uniqueId: uuid,
                         action: "registerAlertDiffStream",
-                        payload: regRequest.filter,
+                        payload: {
+                            alertTypeGroups: [1, 2, 4]
+                        }
                     };
                     await this._connection.sendRequest(alertChangeRequest);
                     unregisterRequest = Object.assign(Object.assign({}, alertChangeRequest), { action: "unregisterAlertDiffStream" });
