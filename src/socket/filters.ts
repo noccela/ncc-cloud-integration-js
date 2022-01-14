@@ -271,8 +271,6 @@ export class AlertDiffStreamFilter extends BaseFilter {
     filter(payload: Types.AlertDiffResponse): Types.AlertDiffResponse | null {
         if (!payload.alerts && !payload.removedAlerts) return null;
 
-        if (!this._filter.deviceIds) return payload;
-
         const filteredResponse: Types.AlertDiffResponse = {
             alerts: null,
             removedAlerts: payload.removedAlerts
@@ -282,7 +280,7 @@ export class AlertDiffStreamFilter extends BaseFilter {
             for(var alarmId in payload.alerts){
                 const alert : Types.AlertDiff | undefined = payload.alerts[alarmId];
                 if(alert == null) continue;
-                if (!this._filter.deviceIds.includes(alert.deviceId)) continue;
+                if (this._filter.deviceIds && !this._filter.deviceIds.includes(alert.deviceId)) continue;
                 if(filteredResponse.alerts == null) filteredResponse.alerts = {};
                 filteredResponse.alerts[alarmId] = {
                     alarmId: alert.alarmId,

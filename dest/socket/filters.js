@@ -235,8 +235,6 @@ export class AlertDiffStreamFilter extends BaseFilter {
     filter(payload) {
         if (!payload.alerts && !payload.removedAlerts)
             return null;
-        if (!this._filter.deviceIds)
-            return payload;
         const filteredResponse = {
             alerts: null,
             removedAlerts: payload.removedAlerts
@@ -246,7 +244,7 @@ export class AlertDiffStreamFilter extends BaseFilter {
                 const alert = payload.alerts[alarmId];
                 if (alert == null)
                     continue;
-                if (!this._filter.deviceIds.includes(alert.deviceId))
+                if (this._filter.deviceIds && !this._filter.deviceIds.includes(alert.deviceId))
                     continue;
                 if (filteredResponse.alerts == null)
                     filteredResponse.alerts = {};
