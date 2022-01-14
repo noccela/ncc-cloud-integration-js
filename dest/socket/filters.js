@@ -239,7 +239,7 @@ export class AlertDiffStreamFilter extends BaseFilter {
             return payload;
         const filteredResponse = {
             alerts: null,
-            removedAlerts: null
+            removedAlerts: payload.removedAlerts
         };
         if (payload.alerts) {
             for (var alarmId in payload.alerts) {
@@ -250,7 +250,17 @@ export class AlertDiffStreamFilter extends BaseFilter {
                     continue;
                 if (filteredResponse.alerts == null)
                     filteredResponse.alerts = {};
-                filteredResponse.alerts[alarmId] = alert;
+                filteredResponse.alerts[alarmId] = {
+                    alarmId: alert.alarmId,
+                    deviceId: alert.deviceId,
+                    alarmType: alert.alarmType,
+                    x: alert.x,
+                    y: alert.y,
+                    timestamp: alert.timestamp,
+                    floorId: alert.floorId,
+                    areaNames: alert.areaNames,
+                    areaIds: alert.areaIds
+                };
             }
         }
         return filteredResponse;

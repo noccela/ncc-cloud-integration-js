@@ -275,16 +275,26 @@ export class AlertDiffStreamFilter extends BaseFilter {
 
         const filteredResponse: Types.AlertDiffResponse = {
             alerts: null,
-            removedAlerts: null
+            removedAlerts: payload.removedAlerts
         };
 
         if (payload.alerts){
             for(var alarmId in payload.alerts){
-                const alert : Types.Alert | undefined = payload.alerts[alarmId];
+                const alert : Types.AlertDiff | undefined = payload.alerts[alarmId];
                 if(alert == null) continue;
                 if (!this._filter.deviceIds.includes(alert.deviceId)) continue;
                 if(filteredResponse.alerts == null) filteredResponse.alerts = {};
-                filteredResponse.alerts[alarmId] = alert;
+                filteredResponse.alerts[alarmId] = {
+                    alarmId: alert.alarmId,
+		            deviceId: alert.deviceId,
+                    alarmType: alert.alarmType,
+		            x: alert.x,
+                    y: alert.y,
+                    timestamp: alert.timestamp,
+		            floorId: alert.floorId,
+                    areaNames: alert.areaNames,
+                    areaIds: alert.areaIds
+                };
             }
         }
 
@@ -343,7 +353,7 @@ export class AlertInitialStateFilter extends BaseFilter {
         let response: Types.AlertInitialStateResponse = parseAlertLiveData(initialState.payload);
         if (this._filter.deviceIds == null) return response;
         for(var alertId in response){
-            let obj: Types.Alert | undefined = response[alertId];
+            let obj: Types.InitialAlertState | undefined = response[alertId];
             if (!obj || !this._filter.deviceIds.includes(obj.deviceId)) continue;
             filteredResponse[alertId] = obj;
         }

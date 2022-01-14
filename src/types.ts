@@ -107,9 +107,9 @@ export type AuthenticateResult = {
     strokeCount: number
   };
 
-  export interface AlertInitialStateResponse extends Dictionary<Alert> {};
+  export interface AlertInitialStateResponse extends Dictionary<InitialAlertState> {};
 
-  export type Alert = {
+  export interface InitialAlertState {
 		alarmId: number;
 		deviceId: number;
     alarmType: string;
@@ -117,9 +117,14 @@ export type AuthenticateResult = {
     y: number;
     timestamp: string;
 		floorId: number | null;
-    areaNames: string[];
+    areaNames: string[] | null;
   };
-  interface AlertDiffAlerts extends Dictionary<Alert> {};
+
+  export interface AlertDiff extends InitialAlertState {
+    areaIds: number[] | null
+  }
+
+  interface AlertDiffAlerts extends Dictionary<AlertDiff> {};
 
   export type AlertDiffResponse = {
     alerts: AlertDiffAlerts | null,

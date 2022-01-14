@@ -74,7 +74,7 @@ export function parseAlertLiveData(msg: string): Types.AlertInitialStateResponse
     // indices are hard-coded.
     for (const [alertId, alertData] of Object.entries(payload)) {
         const aid: number = +alertId;
-        const alertObj: Types.Alert = {
+        const alertObj: Types.InitialAlertState = {
             alarmId: alertData[0],
 		    deviceId: alertData[1],
             alarmType: alertData[2],
