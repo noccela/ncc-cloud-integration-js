@@ -85,7 +85,7 @@ export declare type InitialTagState = {
     wire: boolean;
     reed: boolean;
     isOnline: boolean;
-    timestamp: Date;
+    timestamp: number;
     x: number;
     y: number;
     accelerometer: boolean;

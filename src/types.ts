@@ -95,7 +95,7 @@ export type AuthenticateResult = {
     wire: boolean,
     reed: boolean,
     isOnline: boolean
-    timestamp: Date,
+    timestamp: number,
     x: number,
     y: number,
     accelerometer: boolean,
