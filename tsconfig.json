@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "outDir": "./dest",
+        "outDir": "./dist",
         "target": "es2017",
         "module": "esnext",
         "jsx": "preserve",
@@ -19,6 +19,7 @@
         "alwaysStrict": true,
         "allowUnreachableCode": false,
         "allowUnusedLabels": false,
+        "sourceMap": true,
         "noImplicitAny": true,
         "declaration": true,
         // Enable TS type checking in vanilla JS.

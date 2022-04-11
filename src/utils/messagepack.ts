@@ -46,6 +46,7 @@ export function parseTagLiveData(msg: string): Types.TagInitialStateResponse {
             timestamp : tagData[9],
             x : tagData[10],
             y : tagData[11],
+            z : tagData[19],
             accelerometer : tagData[12],
             floorId : tagData[13],
             signalLost : tagData[14],
@@ -80,9 +81,12 @@ export function parseAlertLiveData(msg: string): Types.AlertInitialStateResponse
             alarmType: alertData[2],
 		    x: alertData[3],
             y: alertData[4],
+            z: alertData[5],
             timestamp: alertData[6],
+            reacted: alertData[7],
 		    floorId: alertData[8],
-            areaNames: alertData[12]
+            areaNames: alertData[12],
+            customTitle: alertData[17]
         };
         
         // Append to result.

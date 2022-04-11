@@ -3,13 +3,12 @@
     "version": "2.0.0",
     "description": "Communicate with Noccela external endpoints using TS",
     "private": true,
-    "main": "dest/index.js",
-    "module": "dest/index.js",
+    "main": "dist/index.js",
+    "module": "dist/index.js",
     "type": "module",
     "files": [
-        "dist/**/*.ts",
-        "src/**/*.ts",
-        "dest/"
+        "dist",
+        "src/**/*.ts"
     ],
     "scripts": {
         "test": "exit 1",

@@ -288,10 +288,13 @@ export class AlertDiffStreamFilter extends BaseFilter {
                     alarmType: alert.alarmType,
 		            x: alert.x,
                     y: alert.y,
+                    z: alert.z,
                     timestamp: alert.timestamp,
+                    reacted: alert.reacted,
 		            floorId: alert.floorId,
                     areaNames: alert.areaNames,
-                    areaIds: alert.areaIds
+                    areaIds: alert.areaIds,
+                    customTitle: alert.customTitle
                 };
             }
         }

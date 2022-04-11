@@ -2,3 +2,4 @@
 // so we need a separate entrypoint for Webpack so we can include it here.
 import "regenerator-runtime/runtime.js";
 export * from "./index.js";
+//# sourceMappingURL=index-wp.js.map

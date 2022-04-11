@@ -4,6 +4,6 @@ const common = require("./webpack.common.cjs");
 module.exports = merge(common, {
     mode: "production",
     entry: {
-        "ncc.min": "./src/index-wp.js"
+        "ncc.min": "./dist/index-wp.js"
     }
 });

@@ -1,8 +1,6 @@
 const path = require("path");
 const npmPackage = require("./package.json");
 const webpack = require("webpack");
-const CopyWebpackPlugin = require("copy-webpack-plugin");
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 
 module.exports = {

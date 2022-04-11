@@ -74,6 +74,7 @@ export type AuthenticateResult = {
     twrTimestamp?: number,
 		x: number,
     y: number,
+    z: number,
 		floorId?: number
   };
 
@@ -98,11 +99,12 @@ export type AuthenticateResult = {
     timestamp: number,
     x: number,
     y: number,
+    z: number,
     accelerometer: boolean,
     floorId: number,
     signalLost: boolean,
     powerSave: boolean,
-    deviceModel: string,
+    deviceModel: number,
     fwVersion: string,
     strokeCount: number
   };
@@ -115,9 +117,12 @@ export type AuthenticateResult = {
     alarmType: string;
 		x: number;
     y: number;
+    z: number;
     timestamp: string;
+    reacted: string | null;
 		floorId: number | null;
     areaNames: string[] | null;
+    customTitle: string | null;
   };
 
   export interface AlertDiff extends InitialAlertState {
@@ -141,6 +146,7 @@ export type AuthenticateResult = {
     isOnline: boolean
     x: number,
     y: number,
+    z: number,
     floorId: number,
     signalLost: boolean,
     powerSave: boolean,
