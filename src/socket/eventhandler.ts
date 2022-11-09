@@ -767,6 +767,25 @@ export class EventChannel {
      * @memberof EventChannel
      * @preserve
      */
+     async getBlueprint(fileId: number) {
+        this._validateConnection();
+        const msg: Types.Request = {
+            uniqueId: "getBlueprint",
+            action: "getBlueprint",
+            payload: {
+                fileId: fileId
+            }
+        };
+        const payload: Types.CloudResponse | undefined = await this._connection.sendRequest(msg, null, "getBlueprint");
+        return payload;
+    }
+
+    /**
+     * Fetch initial state for alerts on the site.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
      async getAlertState(deviceIds: number[] | null = null): Promise<Types.AlertInitialStateResponse | null> {
         this._validateConnection();
         var tenDaysAgo = new Date();
@@ -792,7 +811,7 @@ export class EventChannel {
     }
 
     /**
-     * Fetch initial state for tags on the site.
+     * Fetch site layout.
      *
      * @memberof EventChannel
      * @preserve

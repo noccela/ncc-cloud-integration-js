@@ -167,9 +167,16 @@ export declare class EventChannel {
      * @memberof EventChannel
      * @preserve
      */
+    getBlueprint(fileId: number): Promise<Types.CloudResponse | undefined>;
+    /**
+     * Fetch initial state for alerts on the site.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
     getAlertState(deviceIds?: number[] | null): Promise<Types.AlertInitialStateResponse | null>;
     /**
-     * Fetch initial state for tags on the site.
+     * Fetch site layout.
      *
      * @memberof EventChannel
      * @preserve

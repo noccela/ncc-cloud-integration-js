@@ -493,6 +493,24 @@ export class EventChannel {
      * @memberof EventChannel
      * @preserve
      */
+    async getBlueprint(fileId) {
+        this._validateConnection();
+        const msg = {
+            uniqueId: "getBlueprint",
+            action: "getBlueprint",
+            payload: {
+                fileId: fileId
+            }
+        };
+        const payload = await this._connection.sendRequest(msg, null, "getBlueprint");
+        return payload;
+    }
+    /**
+     * Fetch initial state for alerts on the site.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
     async getAlertState(deviceIds = null) {
         this._validateConnection();
         var tenDaysAgo = new Date();
@@ -517,7 +535,7 @@ export class EventChannel {
         return filter.filter(payload);
     }
     /**
-     * Fetch initial state for tags on the site.
+     * Fetch site layout.
      *
      * @memberof EventChannel
      * @preserve
