@@ -209,6 +209,10 @@ export type AuthenticateResult = {
     uuid: string | null
   };
 
+  export type FlashModuleRequest = {
+    index: number,
+    value: number
+  };
   export type SiteInformationResponse = {
     id: number,
     name: string,

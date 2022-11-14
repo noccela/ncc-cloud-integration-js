@@ -162,12 +162,19 @@ export declare class EventChannel {
      */
     getTagState(deviceIds?: number[] | null): Promise<Types.TagInitialStateResponse | null>;
     /**
-     * Fetch initial state for alerts on the site.
+     * Fetch site's blueprint.
      *
      * @memberof EventChannel
      * @preserve
      */
     getBlueprint(fileId: number): Promise<Types.CloudResponse | undefined>;
+    /**
+     * Send signal to specified flash.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    sendSignal(deviceId: number, modules: Types.FlashModuleRequest[]): Promise<Types.CloudResponse | undefined>;
     /**
      * Fetch initial state for alerts on the site.
      *

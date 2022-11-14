@@ -488,7 +488,7 @@ export class EventChannel {
         return filter.filter(payload);
     }
     /**
-     * Fetch initial state for alerts on the site.
+     * Fetch site's blueprint.
      *
      * @memberof EventChannel
      * @preserve
@@ -503,6 +503,25 @@ export class EventChannel {
             }
         };
         const payload = await this._connection.sendRequest(msg, null, "getBlueprint");
+        return payload;
+    }
+    /**
+     * Send signal to specified flash.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async sendSignal(deviceId, modules) {
+        this._validateConnection();
+        const msg = {
+            uniqueId: "sendSignal",
+            action: "sendSignal",
+            payload: {
+                deviceId: deviceId,
+                modules: modules
+            }
+        };
+        const payload = await this._connection.sendRequest(msg, null, "sendSignal");
         return payload;
     }
     /**

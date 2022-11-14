@@ -762,7 +762,7 @@ export class EventChannel {
     }
 
     /**
-     * Fetch initial state for alerts on the site.
+     * Fetch site's blueprint.
      *
      * @memberof EventChannel
      * @preserve
@@ -777,6 +777,26 @@ export class EventChannel {
             }
         };
         const payload: Types.CloudResponse | undefined = await this._connection.sendRequest(msg, null, "getBlueprint");
+        return payload;
+    }
+
+    /**
+     * Send signal to specified flash.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+     async sendSignal(deviceId: number, modules: Types.FlashModuleRequest[]) {
+        this._validateConnection();
+        const msg: Types.Request = {
+            uniqueId: "sendSignal",
+            action: "sendSignal",
+            payload: {
+                deviceId: deviceId,
+                modules: modules
+            }
+        };
+        const payload: Types.CloudResponse | undefined = await this._connection.sendRequest(msg, null, "sendSignal");
         return payload;
     }
 

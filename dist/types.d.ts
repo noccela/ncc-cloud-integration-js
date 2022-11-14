@@ -187,6 +187,10 @@ export declare type RegisterRequest = {
     callback: (err: string | null, payload: object) => void;
     uuid: string | null;
 };
+export declare type FlashModuleRequest = {
+    index: number;
+    value: number;
+};
 export declare type SiteInformationResponse = {
     id: number;
     name: string;
