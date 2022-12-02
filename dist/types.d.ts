@@ -187,7 +187,18 @@ export declare type RegisterRequest = {
     callback: (err: string | null, payload: object) => void;
     uuid: string | null;
 };
-export declare type FlashModuleRequest = {
+export declare type TagBuzzerRequest = {
+    devices: number[] | null;
+    alertSound: boolean | null;
+    buzzerSeconds: number | null;
+    ledSeconds: number | null;
+    buzzerOnInterval: number | null;
+    buzzerOffInterval: number | null;
+    ledColor: "green" | "red" | "yellow" | null;
+    ledBlinkFrequency: 0 | 1 | 2 | 3 | null;
+    playWithDelay: boolean | null;
+};
+export declare type SignalModuleRequest = {
     index: number;
     value: number;
 };

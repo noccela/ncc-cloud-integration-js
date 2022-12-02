@@ -169,12 +169,19 @@ export declare class EventChannel {
      */
     getBlueprint(fileId: number): Promise<Types.CloudResponse | undefined>;
     /**
+     * Send request for tag(s) to play their buzzer/led..
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    sendTagBuzzer(request: Types.TagBuzzerRequest): Promise<Types.CloudResponse | undefined>;
+    /**
      * Send signal to specified flash.
      *
      * @memberof EventChannel
      * @preserve
      */
-    sendSignal(deviceId: number, modules: Types.FlashModuleRequest[]): Promise<Types.CloudResponse | undefined>;
+    sendSignal(deviceId: number, modules: Types.SignalModuleRequest[]): Promise<Types.CloudResponse | undefined>;
     /**
      * Fetch initial state for alerts on the site.
      *

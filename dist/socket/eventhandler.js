@@ -496,13 +496,29 @@ export class EventChannel {
     async getBlueprint(fileId) {
         this._validateConnection();
         const msg = {
-            uniqueId: "getBlueprint",
+            uniqueId: getUniqueId(),
             action: "getBlueprint",
             payload: {
                 fileId: fileId
             }
         };
-        const payload = await this._connection.sendRequest(msg, null, "getBlueprint");
+        const payload = await this._connection.sendRequest(msg, null);
+        return payload;
+    }
+    /**
+     * Send request for tag(s) to play their buzzer/led..
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async sendTagBuzzer(request) {
+        this._validateConnection();
+        const msg = {
+            uniqueId: getUniqueId(),
+            action: "playTagBuzzer",
+            payload: request
+        };
+        const payload = await this._connection.sendRequest(msg, null);
         return payload;
     }
     /**
@@ -514,14 +530,14 @@ export class EventChannel {
     async sendSignal(deviceId, modules) {
         this._validateConnection();
         const msg = {
-            uniqueId: "sendSignal",
+            uniqueId: getUniqueId(),
             action: "sendSignal",
             payload: {
                 deviceId: deviceId,
                 modules: modules
             }
         };
-        const payload = await this._connection.sendRequest(msg, null, "sendSignal");
+        const payload = await this._connection.sendRequest(msg, null);
         return payload;
     }
     /**
@@ -562,11 +578,11 @@ export class EventChannel {
     async getSite() {
         this._validateConnection();
         const msg = {
-            uniqueId: "getSite",
+            uniqueId: getUniqueId(),
             action: "getSite",
             payload: {}
         };
-        const payload = await this._connection.sendRequest(msg, null, "getSite");
+        const payload = await this._connection.sendRequest(msg, null);
         return payload;
     }
     /**

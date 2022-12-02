@@ -770,33 +770,49 @@ export class EventChannel {
      async getBlueprint(fileId: number) {
         this._validateConnection();
         const msg: Types.Request = {
-            uniqueId: "getBlueprint",
+            uniqueId: getUniqueId(),
             action: "getBlueprint",
             payload: {
                 fileId: fileId
             }
         };
-        const payload: Types.CloudResponse | undefined = await this._connection.sendRequest(msg, null, "getBlueprint");
+        const payload: Types.CloudResponse | undefined = await this._connection.sendRequest(msg, null);
         return payload;
     }
-
+    /**
+     * Send request for tag(s) to play their buzzer/led..
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async sendTagBuzzer(request: Types.TagBuzzerRequest){
+        this._validateConnection();
+        
+        const msg: Types.Request = {
+            uniqueId: getUniqueId(),
+            action: "playTagBuzzer",
+            payload: request
+        };
+        const payload: Types.CloudResponse | undefined = await this._connection.sendRequest(msg, null);
+        return payload;
+    }
     /**
      * Send signal to specified flash.
      *
      * @memberof EventChannel
      * @preserve
      */
-     async sendSignal(deviceId: number, modules: Types.FlashModuleRequest[]) {
+     async sendSignal(deviceId: number, modules: Types.SignalModuleRequest[]) {
         this._validateConnection();
         const msg: Types.Request = {
-            uniqueId: "sendSignal",
+            uniqueId: getUniqueId(),
             action: "sendSignal",
             payload: {
                 deviceId: deviceId,
                 modules: modules
             }
         };
-        const payload: Types.CloudResponse | undefined = await this._connection.sendRequest(msg, null, "sendSignal");
+        const payload: Types.CloudResponse | undefined = await this._connection.sendRequest(msg, null);
         return payload;
     }
 
@@ -839,11 +855,11 @@ export class EventChannel {
          async getSite() {
             this._validateConnection();
             const msg: Types.Request = {
-                uniqueId: "getSite",
+                uniqueId: getUniqueId(),
                 action: "getSite",
                 payload: {}
             };
-            const payload = await this._connection.sendRequest(msg,null,"getSite");
+            const payload = await this._connection.sendRequest(msg,null);
     
             return payload;
         }

@@ -208,8 +208,22 @@ export type AuthenticateResult = {
     callback: (err: string | null, payload: object) => void,
     uuid: string | null
   };
-
-  export type FlashModuleRequest = {
+  export type TagBuzzerRequest = {
+    devices: number[] | null, // If null all tags will be played
+    alertSound: boolean | null, // if null then false
+    buzzerSeconds: number | null, // if null then 15
+    ledSeconds: number | null, // if null then 15
+    buzzerOnInterval: number | null, // if null then 5
+    buzzerOffInterval: number | null, // if null then 5
+    ledColor: "green" | "red" | "yellow" | null, // if null then green
+    //0 => no blink
+    // 1 => 4Hz
+    // 2 => 2Hz
+    // 3 => 1Hz
+    ledBlinkFrequency: 0 | 1 | 2 | 3 | null, // if null then 2
+    playWithDelay: boolean | null // if null then false
+  };
+  export type SignalModuleRequest = {
     index: number,
     value: number
   };
