@@ -47,6 +47,7 @@ export function parseTagLiveData(msg) {
             deviceModel: tagData[16],
             fwVersion: tagData[17],
             strokeCount: tagData[18],
+            uncertaintyDistance: tagData[20]
         };
         // Append to result.
         result[did] = tagObj;

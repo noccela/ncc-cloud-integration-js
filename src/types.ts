@@ -75,6 +75,7 @@ export type AuthenticateResult = {
 		x: number,
     y: number,
     z: number,
+    uncertaintyDistance: number | null,
 		floorId?: number
   };
 
@@ -106,7 +107,8 @@ export type AuthenticateResult = {
     powerSave: boolean,
     deviceModel: number,
     fwVersion: string,
-    strokeCount: number
+    strokeCount: number,
+    uncertaintyDistance: number | null
   };
 
   export interface AlertInitialStateResponse extends Dictionary<InitialAlertState> {};
@@ -152,7 +154,8 @@ export type AuthenticateResult = {
     powerSave: boolean,
     fwVersion: string,
     timestamp: number,
-    strokeCount: number
+    strokeCount: number,
+    uncertaintyDistance: number | null
   };
 
   export type TagDiffResponse = {

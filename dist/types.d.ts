@@ -67,6 +67,7 @@ export declare type LocationUpdateItem = {
     x: number;
     y: number;
     z: number;
+    uncertaintyDistance: number | null;
     floorId?: number;
 };
 export declare type NodeDomainResponse = {
@@ -97,6 +98,7 @@ export declare type InitialTagState = {
     deviceModel: number;
     fwVersion: string;
     strokeCount: number;
+    uncertaintyDistance: number | null;
 };
 export interface AlertInitialStateResponse extends Dictionary<InitialAlertState> {
 }
@@ -139,6 +141,7 @@ export declare type TagDiffItem = {
     fwVersion: string;
     timestamp: number;
     strokeCount: number;
+    uncertaintyDistance: number | null;
 };
 export declare type TagDiffResponse = {
     tags: TagDiffTags | null;
