@@ -108,6 +108,17 @@ export class BaseFilter {
     }
 }
 
+export class EmptyFilter extends BaseFilter {
+
+    constructor(filters: Types.MessageFilter) {
+        super(filters);
+    }
+    filter(payload: Object): Object | null {
+        if (!payload) return null;
+        return payload;
+    }
+}
+
 export class TwrDataFilter extends BaseFilter {
     public _filter: Types.TwrDataFilter;
 

@@ -31,6 +31,10 @@ export declare class BaseFilter {
     constructor(_: Types.MessageFilter);
     filter(_: object): object | null;
 }
+export declare class EmptyFilter extends BaseFilter {
+    constructor(filters: Types.MessageFilter);
+    filter(payload: Object): Object | null;
+}
 export declare class TwrDataFilter extends BaseFilter {
     _filter: Types.TwrDataFilter;
     constructor(filters: Types.TwrDataFilter);

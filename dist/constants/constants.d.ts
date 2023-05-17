@@ -19,6 +19,7 @@ export declare const EVENT_TYPES: {
     SITE_INFO: string;
     ALERT_STATE: string;
     ALERT_DIFF: string;
+    LAYOUT_UPDATE: string;
 };
 /** @type GlobalOptions */
 export declare const DEFAULT_OPTIONS: UserOptions;

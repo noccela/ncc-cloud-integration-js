@@ -90,6 +90,16 @@ export class BaseFilter {
         throw new NotImplementedError();
     }
 }
+export class EmptyFilter extends BaseFilter {
+    constructor(filters) {
+        super(filters);
+    }
+    filter(payload) {
+        if (!payload)
+            return null;
+        return payload;
+    }
+}
 export class TwrDataFilter extends BaseFilter {
     constructor(filters) {
         super(filters);

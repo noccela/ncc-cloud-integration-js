@@ -1,21 +1,21 @@
-export declare type AuthenticateResult = {
+export type AuthenticateResult = {
     tokenExpiration: number;
     tokenIssued: number;
 };
-export declare type TokenRefreshRequest = {
+export type TokenRefreshRequest = {
     authServerDomain: string;
     tokenExpiration: number;
     tokenIssued: number;
     getToken: (clientId: number, clientSecret: string, authOrigin: string) => Promise<AuthResult>;
 };
-export declare type ConsoleLogger = {
+export type ConsoleLogger = {
     log: (msg: string) => void;
     warn: (msg: string) => void;
     error: (msg: string) => void;
     exception: (msg: string, e: string | null) => void;
     debug: (msg: string, b: any) => void;
 };
-export declare type UserOptions = {
+export type UserOptions = {
     loggers: [ConsoleLogger];
     reopenBrokenConnection: boolean;
     retryIntervalMin: number;
@@ -34,34 +34,34 @@ export declare type UserOptions = {
     waitForFailedReRegistration: number;
     getWsAddress: ((lbDomain: string, account: number, site: number, token: string) => Promise<string>) | null;
 };
-export declare type Request = {
+export type Request = {
     uniqueId: string;
     action: string;
     payload: object;
 };
-export declare type CloudResponse = {
+export type CloudResponse = {
     uniqueId: string;
     action: string | null;
     status: string;
     payload: any;
 };
-export declare type AuthResponse = {
+export type AuthResponse = {
     expires_in: number;
     access_token: string;
     error: string;
 };
-export declare type AuthResult = {
+export type AuthResult = {
     expiresIn: number;
     accessToken: string;
 };
-export declare type AuthenticateResponse = {
+export type AuthenticateResponse = {
     tokenExpiration: number;
     tokenIssued: number;
     cloudVersion: string;
 };
 export interface LocationUpdateResponse extends Dictionary<LocationUpdateItem> {
 }
-export declare type LocationUpdateItem = {
+export type LocationUpdateItem = {
     timestamp: number;
     twrTimestamp?: number;
     x: number;
@@ -70,7 +70,10 @@ export declare type LocationUpdateItem = {
     uncertaintyDistance: number | null;
     floorId?: number;
 };
-export declare type NodeDomainResponse = {
+export declare type LayoutUpdateItem = {
+    minorId: number;
+};
+export type NodeDomainResponse = {
     domain: string;
 };
 interface Dictionary<T> extends Object {
@@ -78,7 +81,7 @@ interface Dictionary<T> extends Object {
 }
 export interface TagInitialStateResponse extends Dictionary<InitialTagState> {
 }
-export declare type InitialTagState = {
+export type InitialTagState = {
     name: string;
     batteryVoltage: number;
     batteryStatus: number;
@@ -120,13 +123,13 @@ export interface AlertDiff extends InitialAlertState {
 }
 interface AlertDiffAlerts extends Dictionary<AlertDiff> {
 }
-export declare type AlertDiffResponse = {
+export type AlertDiffResponse = {
     alerts: AlertDiffAlerts | null;
     removedAlerts: number[] | null;
 };
 interface TagDiffTags extends Dictionary<TagDiffItem> {
 }
-export declare type TagDiffItem = {
+export type TagDiffItem = {
     name: string;
     batteryStatus: number;
     status: number;
@@ -143,11 +146,11 @@ export declare type TagDiffItem = {
     strokeCount: number;
     uncertaintyDistance: number | null;
 };
-export declare type TagDiffResponse = {
+export type TagDiffResponse = {
     tags: TagDiffTags | null;
     removedTags: string[] | null;
 };
-export declare type TwrDataResponse = {
+export type TwrDataResponse = {
     tId: number;
     bId: number;
     t: number;
@@ -184,13 +187,13 @@ export interface ContactTracingUpdateItem {
     source: string;
     level: string;
 }
-export declare type RegisterRequest = {
+export type RegisterRequest = {
     eventType: string;
     filter: MessageFilter;
     callback: (err: string | null, payload: object) => void;
     uuid: string | null;
 };
-export declare type TagBuzzerRequest = {
+export type TagBuzzerRequest = {
     devices: number[] | null;
     alertSound: boolean | null;
     buzzerSeconds: number | null;
@@ -201,11 +204,11 @@ export declare type TagBuzzerRequest = {
     ledBlinkFrequency: 0 | 1 | 2 | 3 | null;
     playWithDelay: boolean | null;
 };
-export declare type SignalModuleRequest = {
+export type SignalModuleRequest = {
     index: number;
     value: number;
 };
-export declare type SiteInformationResponse = {
+export type SiteInformationResponse = {
     id: number;
     name: string;
     comment: string;
@@ -232,7 +235,7 @@ export interface DetailedSiteLayoutInformation {
     start: Date | null;
     stop: Date | null;
 }
-export declare type SiteLayout = {
+export type SiteLayout = {
     floors: LayoutFloor[];
 };
 export interface BaseLayoutItem {
@@ -297,11 +300,11 @@ export interface LayoutItem extends BaseLayoutItem {
     areaIds: number[];
     radiusSettingsForTagGroups: Dictionary<BeaconRadiusSettings>;
 }
-export declare type PolygonPoint = {
+export type PolygonPoint = {
     x: number;
     y: number;
 };
-export declare type BeaconRadiusSettings = {
+export type BeaconRadiusSettings = {
     radius: number | null;
     isQuarantine: boolean;
     nullIfRadiusExceeded: boolean;
@@ -309,7 +312,7 @@ export declare type BeaconRadiusSettings = {
     triggerRadiusInCount: number;
     triggerRadiusOutCount: number;
 };
-export declare type TagGroup = {
+export type TagGroup = {
     GroupId: number;
     IdentifierId: number;
     IsWhiteList: boolean;
@@ -318,47 +321,47 @@ export declare type TagGroup = {
     Stop: number | null;
     Settings: TagGroupSettings;
 };
-export declare type TagGroupSettings = {
+export type TagGroupSettings = {
     P2PSettings: any;
     P2PMeasSamplingMillis: number | null;
 };
-export declare type P2PSettings = {
+export type P2PSettings = {
     ZoneConfigs: P2PZoneConfig[];
     SleepConfig: P2PSleepConfig;
     TxPowerConfig: P2PTxPowerConfig;
     ButtonConfigs: P2PButtonActionConfig[];
 };
-export declare type P2PZoneConfig = {
+export type P2PZoneConfig = {
     Range: P2PRangeConfig;
     Buzzer: P2PBuzzerConfig;
     Delay: P2PDelayConfig;
 };
-export declare type P2PRangeConfig = {
+export type P2PRangeConfig = {
     InvertRange: boolean;
     Range: number;
 };
-export declare type P2PBuzzerConfig = {
+export type P2PBuzzerConfig = {
     BuzzerMode: number;
     BuzzerSound: number;
     LedBlinkMode: number;
     LedColor: number;
 };
-export declare type P2PDelayConfig = {
+export type P2PDelayConfig = {
     AlertDelay: number;
     EventDelay: number;
 };
-export declare type P2PSleepConfig = {
+export type P2PSleepConfig = {
     SleepDelay: number;
     NotMovingAlertTime: number;
 };
-export declare type P2PTxPowerConfig = {
+export type P2PTxPowerConfig = {
     TxPower: number;
 };
-export declare type P2PButtonActionConfig = {
+export type P2PButtonActionConfig = {
     ClickType: number;
     Action: number;
 };
-export declare type ServerMessageHandler = {
+export type ServerMessageHandler = {
     callback: (payload: object) => void;
     uuid: string;
 };

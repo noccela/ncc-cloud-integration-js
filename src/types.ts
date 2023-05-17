@@ -79,6 +79,10 @@ export type AuthenticateResult = {
 		floorId?: number
   };
 
+  export declare type LayoutUpdateItem = {
+    minorId: number
+  };
+  
   export type NodeDomainResponse = {
 		domain: string
   };

@@ -2,7 +2,7 @@ import { DEFAULT_OPTIONS, EVENT_TYPES } from "../constants/constants.js";
 import { DEFAULT_AUTH_ORIGIN, DEFAULT_API_HTTP_ORIGIN, } from "../constants/paths.js";
 import { getUniqueId, validateAccountAndSite, validateOptions, waitAsync, } from "../utils/utils.js";
 import { RobustAuthenticatedWSChannel } from "./connectionhandler.js";
-import { getFilteredCallback, TagInitialStateFilter, AlertInitialStateFilter, LocationUpdateFilter, P2pDistanceUpdateFilter, TagDiffStreamFilter, TwrDataFilter, ContactTracingUpdateFilter, AlertDiffStreamFilter, } from "./filters.js";
+import { getFilteredCallback, TagInitialStateFilter, AlertInitialStateFilter, LocationUpdateFilter, P2pDistanceUpdateFilter, TagDiffStreamFilter, TwrDataFilter, ContactTracingUpdateFilter, AlertDiffStreamFilter, EmptyFilter, } from "./filters.js";
 import { Dependencies, RegisteredEvent } from "./models.js";
 import { ArgumentException } from "../utils/exceptions.js";
 /**
@@ -218,6 +218,12 @@ export class EventChannel {
             deviceIds: deviceIds
         };
         return this.register(EVENT_TYPES["ALERT_DIFF"], filter, callback);
+    }
+    async registerLayoutChanges(callback) {
+        const filter = {
+            deviceIds: null
+        };
+        return this.register(EVENT_TYPES.LAYOUT_UPDATE, filter, callback);
     }
     /**
      * Register to contact tracing updates.
@@ -436,6 +442,18 @@ export class EventChannel {
                         regRequest.callback(null, response);
                     }
                 }
+                break;
+            case EVENT_TYPES.LAYOUT_UPDATE:
+                registeredResponseType = "siteLayoutChanged";
+                const filteredCallback = getFilteredCallback(EmptyFilter, regRequest.callback, regRequest.filter, this._dependencyContainer);
+                this._connection.registerServerCallback(registeredResponseType, uuid, filteredCallback.process.bind(filteredCallback));
+                const request = {
+                    uniqueId: uuid,
+                    action: "registerLayoutChanges",
+                    payload: regRequest.filter,
+                };
+                await this._connection.sendRequest(request);
+                unregisterRequest = Object.assign(Object.assign({}, request), { action: "unregisterLayoutChanges" });
                 break;
             default:
                 throw Error(`Invalid event type ${regRequest.eventType}, available types ${Object.keys(EVENT_TYPES).join()}`);

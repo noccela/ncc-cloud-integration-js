@@ -25,6 +25,7 @@ export const EVENT_TYPES = {
     SITE_INFO: "SITE_INFO",
     ALERT_STATE: "ALERT_STATE",
     ALERT_DIFF: "ALERT_DIFF",
+    LAYOUT_UPDATE: "LAYOUT_UPDATE"
 };
 
 // Default settings that are extended or overridden by user provided ones.

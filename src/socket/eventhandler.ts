@@ -21,6 +21,7 @@ import {
     TwrDataFilter,
     ContactTracingUpdateFilter,
     AlertDiffStreamFilter,
+    EmptyFilter,
 } from "./filters.js";
 import { Dependencies, RegisteredEvent } from "./models.js";
 import { ArgumentException } from "../utils/exceptions.js";
@@ -312,6 +313,17 @@ export class EventChannel {
         }
         return this.register(
             EVENT_TYPES["ALERT_DIFF"],
+            filter,
+            callback
+        );
+    }
+
+    async registerLayoutChanges(callback: (err: string | null, payload: Types.LayoutUpdateItem) => void): Promise<string> {
+        const filter: Types.MessageFilter = {
+            deviceIds: null
+        }
+        return this.register(
+            EVENT_TYPES.LAYOUT_UPDATE,
             filter,
             callback
         );
@@ -686,6 +698,31 @@ export class EventChannel {
                     }
                    
                 }
+                break;
+            case EVENT_TYPES.LAYOUT_UPDATE:
+                registeredResponseType = "siteLayoutChanged";
+                const filteredCallback = getFilteredCallback(
+                    EmptyFilter as typeof BaseFilter,
+                    regRequest.callback,
+                    regRequest.filter,
+                    this._dependencyContainer
+                );
+
+                this._connection.registerServerCallback(registeredResponseType, uuid, filteredCallback.process.bind(filteredCallback));
+
+                const request: Types.Request = {
+                    uniqueId: uuid,
+                    action: "registerLayoutChanges",
+                    payload: regRequest.filter,
+                };
+
+                await this._connection.sendRequest(request);
+
+                unregisterRequest = {
+                    ...request,
+                    action: "unregisterLayoutChanges",
+                };
+
                 break;
             default:
                 throw Error(
