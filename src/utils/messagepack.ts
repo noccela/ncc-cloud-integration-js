@@ -22,6 +22,39 @@ export function parseMsgPack(baseMsg: string): object {
     return payload;
 }
 
+export function parseBeaconLiveData(msg: string): Types.BeaconInitialStateResponse{
+    const payload:object = parseMsgPack(msg);
+    const result: Types.BeaconInitialStateResponse = {};
+    const deviceIds: string[] = Object.keys(payload);
+    if (!deviceIds || !deviceIds.length) return result;
+
+    for (const [deviceId, beaconData] of Object.entries(payload)) {
+        const did: number = +deviceId;
+        const beaconObj: Types.InitialBeaconState = {
+            online: beaconData[0],
+            charging : beaconData[1],
+            voltage : beaconData[2],
+        };
+        result[did] = beaconObj;
+    }
+    return result;
+}
+export function parseBeaconDiffData(msg: string): Types.BeaconDiffResponse{
+    const payload:object = parseMsgPack(msg);
+    const result: Types.BeaconDiffResponse = {};
+    const deviceIds: string[] = Object.keys(payload);
+    if (!deviceIds || !deviceIds.length) return result;
+
+    for (const [deviceId, beaconData] of Object.entries(payload)) {
+        const did: number = +deviceId;
+        const beaconObj: Types.BeaconDiff = {};
+        if (beaconData[0] != null) beaconObj.online = beaconData[0];
+        if (beaconData[1] != null) beaconObj.charging = beaconData[1];
+        if (beaconData[2] != null) beaconObj.voltage = beaconData[2];
+        result[did] = beaconObj;
+    }
+    return result;
+}
 export function parseTagLiveData(msg: string): Types.TagInitialStateResponse {
     const payload:object = parseMsgPack(msg);
 

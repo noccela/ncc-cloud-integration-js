@@ -16,6 +16,42 @@ export function parseMsgPack(baseMsg) {
     const payload = msgpack.deserialize(intArray);
     return payload;
 }
+export function parseBeaconLiveData(msg) {
+    const payload = parseMsgPack(msg);
+    const result = {};
+    const deviceIds = Object.keys(payload);
+    if (!deviceIds || !deviceIds.length)
+        return result;
+    for (const [deviceId, beaconData] of Object.entries(payload)) {
+        const did = +deviceId;
+        const beaconObj = {
+            online: beaconData[0],
+            charging: beaconData[1],
+            voltage: beaconData[2],
+        };
+        result[did] = beaconObj;
+    }
+    return result;
+}
+export function parseBeaconDiffData(msg) {
+    const payload = parseMsgPack(msg);
+    const result = {};
+    const deviceIds = Object.keys(payload);
+    if (!deviceIds || !deviceIds.length)
+        return result;
+    for (const [deviceId, beaconData] of Object.entries(payload)) {
+        const did = +deviceId;
+        const beaconObj = {};
+        if (beaconData[0] != null)
+            beaconObj.online = beaconData[0];
+        if (beaconData[1] != null)
+            beaconObj.charging = beaconData[1];
+        if (beaconData[2] != null)
+            beaconObj.voltage = beaconData[2];
+        result[did] = beaconObj;
+    }
+    return result;
+}
 export function parseTagLiveData(msg) {
     const payload = parseMsgPack(msg);
     const result = {};

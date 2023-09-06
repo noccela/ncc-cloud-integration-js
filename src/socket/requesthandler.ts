@@ -185,6 +185,10 @@ export class RequestHandler {
             cloudResponse.action = null;
         }
 
+        if(cloudResponse.action === "initialBeaconState" && statusOk){
+            cloudResponse.uniqueId = cloudResponse.action;
+            cloudResponse.action = null;
+        }
          // TODO: Find a more elegant way to do this.
          if (cloudResponse.uniqueId === "getInitialAlertState" && !statusOk) {
             // Initial tag state response is of different type if the request

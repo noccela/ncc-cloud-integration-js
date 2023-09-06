@@ -1,5 +1,5 @@
 import { ArgumentException, NotImplementedError } from "../utils/exceptions.js";
-import { parseTagLiveData, parseAlertLiveData } from "../utils/messagepack.js";
+import { parseTagLiveData, parseAlertLiveData, parseBeaconLiveData, parseBeaconDiffData } from "../utils/messagepack.js";
 export function getFilteredCallback(filterClass, callback, filters, dependencies) {
     if (!filterClass || typeof filterClass !== "function") {
         throw new ArgumentException("filterClass");
@@ -235,6 +235,30 @@ export class TagDiffStreamFilter extends BaseFilter {
         return filteredResponse;
     }
 }
+export class BeaconDiffStreamFilter extends BaseFilter {
+    constructor(filters) {
+        super(filters);
+        this._filter = filters;
+        this.filter = this.filter.bind(this);
+    }
+    /** @inheritdoc */
+    filter(beaconDiff) {
+        // Parse encoded response.
+        let filteredResponse = {};
+        if (!beaconDiff)
+            return filteredResponse;
+        let response = parseBeaconDiffData(beaconDiff.toString());
+        if (this._filter.deviceIds == null)
+            return response;
+        for (var deviceId in response) {
+            let obj = response[deviceId];
+            if (!obj || !this._filter.deviceIds.includes(+deviceId))
+                continue;
+            filteredResponse[deviceId] = obj;
+        }
+        return filteredResponse;
+    }
+}
 export class AlertDiffStreamFilter extends BaseFilter {
     constructor(filters) {
         super(filters);
@@ -298,6 +322,30 @@ export class TagInitialStateFilter extends BaseFilter {
         if (!initialState)
             return filteredResponse;
         let response = parseTagLiveData(initialState.payload);
+        if (this._filter.deviceIds == null)
+            return response;
+        for (var deviceId in response) {
+            let obj = response[deviceId];
+            if (!obj || !this._filter.deviceIds.includes(+deviceId))
+                continue;
+            filteredResponse[deviceId] = obj;
+        }
+        return filteredResponse;
+    }
+}
+export class BeaconInitialStateFilter extends BaseFilter {
+    constructor(filters) {
+        super(filters);
+        this._filter = filters;
+        this.filter = this.filter.bind(this);
+    }
+    /** @inheritdoc */
+    filter(initialState) {
+        // Parse encoded response.
+        let filteredResponse = {};
+        if (!initialState)
+            return filteredResponse;
+        let response = parseBeaconLiveData(initialState.payload);
         if (this._filter.deviceIds == null)
             return response;
         for (var deviceId in response) {

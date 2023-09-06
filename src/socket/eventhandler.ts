@@ -22,6 +22,8 @@ import {
     ContactTracingUpdateFilter,
     AlertDiffStreamFilter,
     EmptyFilter,
+    BeaconInitialStateFilter,
+    BeaconDiffStreamFilter
 } from "./filters.js";
 import { Dependencies, RegisteredEvent } from "./models.js";
 import { ArgumentException } from "../utils/exceptions.js";
@@ -238,6 +240,53 @@ export class EventChannel {
         }
         return this.register(
             EVENT_TYPES["P2P_DISTANCE_UPDATE"],
+            filter,
+            callback
+        );
+    }
+
+    /**
+     * Register to initial full state for beacons on a given site.
+     *
+     * The callback will be invoked when first registered and when the connection
+     * is re-established. Otherwise updates are tracked via incremental updates.
+     *
+     * To get the full state whenever you want, use @see{EventChannel#getBeaconState}.
+     *
+     * @param {(err: String, payload: Object) => void} callback
+     * @param {Number[]} [deviceIds] Devices to get updates for. If null then
+     * all devides from the site.
+     */
+    async registerInitialBeaconState(callback: (err: string | null, payload: Types.BeaconInitialStateResponse) => void, deviceIds: number[] | null = null): Promise<string> {
+        if (deviceIds && deviceIds.constructor !== Array) {
+            throw new ArgumentException("deviceIds");
+        }
+        const filter: Types.MessageFilter = {
+            deviceIds: deviceIds
+        }
+        return this.register(
+            EVENT_TYPES["BEACON_STATE"],
+            filter,
+            callback
+        );
+    }
+
+    /**
+     * Register to incremental updates for tags' state on a given site.
+     *
+     * @param {(err: String, payload: Object) => void} callback
+     * @param {Number[]} [deviceIds] Devices to get updates for. If null then
+     * all devides from the site.
+     */
+    async registerBeaconDiffStream(callback: (err: string | null, payload: Types.BeaconDiffResponse) => void, deviceIds: number[] | null = null): Promise<string> {
+        if (deviceIds && deviceIds.constructor !== Array) {
+            throw new ArgumentException("deviceIds");
+        }
+        const filter: Types.MessageFilter = {
+            deviceIds: deviceIds
+        }
+        return this.register(
+            EVENT_TYPES["BEACON_DIFF"],
             filter,
             callback
         );
@@ -542,6 +591,41 @@ export class EventChannel {
                 }
 
                 break;
+                case EVENT_TYPES["BEACON_DIFF"]:
+                    {
+                        validateOptions(regRequest.filter, ["deviceIds"], null);
+                        registeredResponseType = "beaconDiffStream";
+    
+                        const filteredBeaconDiffCallback = getFilteredCallback(
+                            BeaconDiffStreamFilter as typeof BaseFilter,
+                            regRequest.callback,
+                            regRequest.filter,
+                            this._dependencyContainer
+                        );
+    
+                        this._connection.registerServerCallback(
+                            registeredResponseType,
+                            uuid,
+                            filteredBeaconDiffCallback.process.bind(
+                                filteredBeaconDiffCallback
+                            )
+                        );
+    
+                        const beaconChangeRequest: Types.Request = {
+                            uniqueId: uuid,
+                            action: "registerToBeaconChangeStream",
+                            payload: regRequest.filter,
+                        };
+    
+                        await this._connection.sendRequest(beaconChangeRequest);
+    
+                        unregisterRequest = {
+                            ...beaconChangeRequest,
+                            action: "unregisterBeaconChangeStream",
+                        };
+                    }
+    
+                    break;
             case EVENT_TYPES["ALERT_DIFF"]:
                 {
                     validateOptions(regRequest.filter, ["deviceIds"], null);
@@ -668,6 +752,21 @@ export class EventChannel {
                 }
 
                 break;
+            case EVENT_TYPES["BEACON_STATE"]:
+                {
+                    validateOptions(regRequest.filter, ["deviceIds"], null);
+                    registeredResponseType = "initialBeaconState";
+
+                    const initialResponse: Types.BeaconInitialStateResponse | null = await this.getBeaconState(regRequest.filter.deviceIds);
+
+                    // Register to future tag state messages.
+                    // New is sent when for example socket is re-established.
+                    registeredResponseType = "initialBeaconState";
+
+                    if (initialResponse != null) regRequest.callback(null, initialResponse);
+                }
+    
+                break;
             case EVENT_TYPES["ALERT_STATE"]:
                 {
                     validateOptions(regRequest.filter, ["deviceIds"], null);
@@ -772,7 +871,27 @@ export class EventChannel {
 
         return uuid;
     }
-
+    /**
+     * Fetch initial state for beacons on the site.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async getBeaconState(deviceIds: number[] | null = null): Promise<Types.BeaconInitialStateResponse | null> {
+        this._validateConnection();
+        const msg: Types.Request = {
+            uniqueId: "getInitialBeaconState",
+            action: "getInitialBeaconState",
+            payload: {}
+        };
+        const payload: Types.CloudResponse | undefined = await this._connection.sendRequest(msg, null, "initialBeaconState");
+        if (payload == null) return null;
+        this._logger.log("Beacons: " + payload);
+        const filter = new BeaconInitialStateFilter({
+            deviceIds
+        });
+        return filter.filter(payload);
+    }
     /**
      * Fetch initial state for tags on the site.
      *

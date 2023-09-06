@@ -65,6 +65,12 @@ export declare class TagDiffStreamFilter extends BaseFilter {
     /** @inheritdoc */
     filter(payload: Types.TagDiffResponse): Types.TagDiffResponse | null;
 }
+export declare class BeaconDiffStreamFilter extends BaseFilter {
+    _filter: Types.MessageFilter;
+    constructor(filters: Types.MessageFilter);
+    /** @inheritdoc */
+    filter(beaconDiff: object): Types.BeaconDiffResponse | null;
+}
 export declare class AlertDiffStreamFilter extends BaseFilter {
     _filter: Types.MessageFilter;
     constructor(filters: Types.MessageFilter);
@@ -79,6 +85,12 @@ export declare class TagInitialStateFilter extends BaseFilter {
     constructor(filters: Types.MessageFilter);
     /** @inheritdoc */
     filter(initialState: Types.CloudResponse): Types.TagInitialStateResponse | null;
+}
+export declare class BeaconInitialStateFilter extends BaseFilter {
+    _filter: Types.MessageFilter;
+    constructor(filters: Types.MessageFilter);
+    /** @inheritdoc */
+    filter(initialState: Types.CloudResponse): Types.BeaconInitialStateResponse | null;
 }
 export declare class AlertInitialStateFilter extends BaseFilter {
     _filter: Types.MessageFilter;

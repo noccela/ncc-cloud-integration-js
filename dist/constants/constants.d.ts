@@ -20,6 +20,8 @@ export declare const EVENT_TYPES: {
     ALERT_STATE: string;
     ALERT_DIFF: string;
     LAYOUT_UPDATE: string;
+    BEACON_STATE: string;
+    BEACON_DIFF: string;
 };
 /** @type GlobalOptions */
 export declare const DEFAULT_OPTIONS: UserOptions;

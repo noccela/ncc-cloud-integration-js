@@ -79,6 +79,20 @@ export type NodeDomainResponse = {
 interface Dictionary<T> extends Object {
     [key: number]: T;
 }
+export interface BeaconInitialStateResponse extends Dictionary<InitialBeaconState> {
+}
+export type InitialBeaconState = {
+    online: boolean;
+    charging: boolean | null;
+    voltage: number | null;
+};
+export interface BeaconDiffResponse extends Dictionary<BeaconDiff> {
+}
+export type BeaconDiff = {
+    online?: boolean | undefined;
+    charging?: boolean | undefined;
+    voltage?: number | undefined;
+};
 export interface TagInitialStateResponse extends Dictionary<InitialTagState> {
 }
 export type InitialTagState = {
