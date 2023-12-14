@@ -289,13 +289,13 @@ likely never necessary.
 Domain for authentication server in _production_ environment is
 
 ```
-https://auth.noccela.com
+https://auth.noccela.io
 ```
 
 Base domain for APIs is (provided to library functions)
 
 ```
-https://api.noccela.com
+https://api.noccela.io
 ```
 
 ## Known Issues

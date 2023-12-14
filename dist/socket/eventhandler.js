@@ -2,7 +2,7 @@ import { DEFAULT_OPTIONS, EVENT_TYPES } from "../constants/constants.js";
 import { DEFAULT_AUTH_ORIGIN, DEFAULT_API_HTTP_ORIGIN, } from "../constants/paths.js";
 import { getUniqueId, validateAccountAndSite, validateOptions, waitAsync, } from "../utils/utils.js";
 import { RobustAuthenticatedWSChannel } from "./connectionhandler.js";
-import { getFilteredCallback, TagInitialStateFilter, AlertInitialStateFilter, LocationUpdateFilter, P2pDistanceUpdateFilter, TagDiffStreamFilter, TwrDataFilter, ContactTracingUpdateFilter, AlertDiffStreamFilter, EmptyFilter, } from "./filters.js";
+import { getFilteredCallback, TagInitialStateFilter, AlertInitialStateFilter, LocationUpdateFilter, P2pDistanceUpdateFilter, TagDiffStreamFilter, TwrDataFilter, ContactTracingUpdateFilter, AlertDiffStreamFilter, EmptyFilter, BeaconInitialStateFilter, BeaconDiffStreamFilter } from "./filters.js";
 import { Dependencies, RegisteredEvent } from "./models.js";
 import { ArgumentException } from "../utils/exceptions.js";
 /**
@@ -163,6 +163,43 @@ export class EventChannel {
             deviceIds: deviceIds
         };
         return this.register(EVENT_TYPES["P2P_DISTANCE_UPDATE"], filter, callback);
+    }
+    /**
+     * Register to initial full state for beacons on a given site.
+     *
+     * The callback will be invoked when first registered and when the connection
+     * is re-established. Otherwise updates are tracked via incremental updates.
+     *
+     * To get the full state whenever you want, use @see{EventChannel#getBeaconState}.
+     *
+     * @param {(err: String, payload: Object) => void} callback
+     * @param {Number[]} [deviceIds] Devices to get updates for. If null then
+     * all devides from the site.
+     */
+    async registerInitialBeaconState(callback, deviceIds = null) {
+        if (deviceIds && deviceIds.constructor !== Array) {
+            throw new ArgumentException("deviceIds");
+        }
+        const filter = {
+            deviceIds: deviceIds
+        };
+        return this.register(EVENT_TYPES["BEACON_STATE"], filter, callback);
+    }
+    /**
+     * Register to incremental updates for tags' state on a given site.
+     *
+     * @param {(err: String, payload: Object) => void} callback
+     * @param {Number[]} [deviceIds] Devices to get updates for. If null then
+     * all devides from the site.
+     */
+    async registerBeaconDiffStream(callback, deviceIds = null) {
+        if (deviceIds && deviceIds.constructor !== Array) {
+            throw new ArgumentException("deviceIds");
+        }
+        const filter = {
+            deviceIds: deviceIds
+        };
+        return this.register(EVENT_TYPES["BEACON_DIFF"], filter, callback);
     }
     /**
      * Register to initial full state for tags on a given site.
@@ -358,6 +395,21 @@ export class EventChannel {
                     unregisterRequest = Object.assign(Object.assign({}, tagChangeRequest), { action: "unregisterTagDiffStream" });
                 }
                 break;
+            case EVENT_TYPES["BEACON_DIFF"]:
+                {
+                    validateOptions(regRequest.filter, ["deviceIds"], null);
+                    registeredResponseType = "beaconDiffStream";
+                    const filteredBeaconDiffCallback = getFilteredCallback(BeaconDiffStreamFilter, regRequest.callback, regRequest.filter, this._dependencyContainer);
+                    this._connection.registerServerCallback(registeredResponseType, uuid, filteredBeaconDiffCallback.process.bind(filteredBeaconDiffCallback));
+                    const beaconChangeRequest = {
+                        uniqueId: uuid,
+                        action: "registerToBeaconChangeStream",
+                        payload: regRequest.filter,
+                    };
+                    await this._connection.sendRequest(beaconChangeRequest);
+                    unregisterRequest = Object.assign(Object.assign({}, beaconChangeRequest), { action: "unregisterBeaconChangeStream" });
+                }
+                break;
             case EVENT_TYPES["ALERT_DIFF"]:
                 {
                     validateOptions(regRequest.filter, ["deviceIds"], null);
@@ -414,6 +466,18 @@ export class EventChannel {
                     // Register to future tag state messages.
                     // New is sent when for example socket is re-established.
                     registeredResponseType = "initialTagState";
+                    if (initialResponse != null)
+                        regRequest.callback(null, initialResponse);
+                }
+                break;
+            case EVENT_TYPES["BEACON_STATE"]:
+                {
+                    validateOptions(regRequest.filter, ["deviceIds"], null);
+                    registeredResponseType = "initialBeaconState";
+                    const initialResponse = await this.getBeaconState(regRequest.filter.deviceIds);
+                    // Register to future tag state messages.
+                    // New is sent when for example socket is re-established.
+                    registeredResponseType = "initialBeaconState";
                     if (initialResponse != null)
                         regRequest.callback(null, initialResponse);
                 }
@@ -480,6 +544,28 @@ export class EventChannel {
         // is re-established.
         this._registeredEvents[uuid] = new RegisteredEvent(eventType, registeredResponseType, callback, regRequest, unregisterRequest);
         return uuid;
+    }
+    /**
+     * Fetch initial state for beacons on the site.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async getBeaconState(deviceIds = null) {
+        this._validateConnection();
+        const msg = {
+            uniqueId: "getInitialBeaconState",
+            action: "getInitialBeaconState",
+            payload: {}
+        };
+        const payload = await this._connection.sendRequest(msg, null, "initialBeaconState");
+        if (payload == null)
+            return null;
+        this._logger.log("Beacons: " + payload);
+        const filter = new BeaconInitialStateFilter({
+            deviceIds
+        });
+        return filter.filter(payload);
     }
     /**
      * Fetch initial state for tags on the site.

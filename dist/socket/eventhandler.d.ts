@@ -86,6 +86,27 @@ export declare class EventChannel {
      */
     registerP2PDistanceStream(callback: (err: string | null, payload: Types.P2PDistanceUpdateResponse) => void, deviceIds?: number[] | null): Promise<string>;
     /**
+     * Register to initial full state for beacons on a given site.
+     *
+     * The callback will be invoked when first registered and when the connection
+     * is re-established. Otherwise updates are tracked via incremental updates.
+     *
+     * To get the full state whenever you want, use @see{EventChannel#getBeaconState}.
+     *
+     * @param {(err: String, payload: Object) => void} callback
+     * @param {Number[]} [deviceIds] Devices to get updates for. If null then
+     * all devides from the site.
+     */
+    registerInitialBeaconState(callback: (err: string | null, payload: Types.BeaconInitialStateResponse) => void, deviceIds?: number[] | null): Promise<string>;
+    /**
+     * Register to incremental updates for tags' state on a given site.
+     *
+     * @param {(err: String, payload: Object) => void} callback
+     * @param {Number[]} [deviceIds] Devices to get updates for. If null then
+     * all devides from the site.
+     */
+    registerBeaconDiffStream(callback: (err: string | null, payload: Types.BeaconDiffResponse) => void, deviceIds?: number[] | null): Promise<string>;
+    /**
      * Register to initial full state for tags on a given site.
      *
      * The callback will be invoked when first registered and when the connection
@@ -155,6 +176,13 @@ export declare class EventChannel {
      * @preserve
      */
     register(eventType: string, filters: Types.MessageFilter, callback: (err: string | null, payload: object) => void, requestUuid?: string | null): Promise<string>;
+    /**
+     * Fetch initial state for beacons on the site.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    getBeaconState(deviceIds?: number[] | null): Promise<Types.BeaconInitialStateResponse | null>;
     /**
      * Fetch initial state for tags on the site.
      *
