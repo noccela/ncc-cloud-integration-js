@@ -83,7 +83,10 @@ export function parseTagLiveData(msg) {
             deviceModel: tagData[16],
             fwVersion: tagData[17],
             strokeCount: tagData[18],
-            uncertaintyDistance: tagData[20]
+            uncertaintyDistance: tagData[20],
+            odometer: tagData[21],
+            tripmeter: tagData[22],
+            speed: tagData[23]
         };
         // Append to result.
         result[did] = tagObj;

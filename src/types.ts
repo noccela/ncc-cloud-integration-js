@@ -126,7 +126,10 @@ export type AuthenticateResult = {
     deviceModel: number,
     fwVersion: string,
     strokeCount: number,
-    uncertaintyDistance: number | null
+    uncertaintyDistance: number | null,
+    odometer: number,
+    tripmeter: number,
+    speed: number | null
   };
 
   export interface AlertInitialStateResponse extends Dictionary<InitialAlertState> {};
@@ -173,7 +176,11 @@ export type AuthenticateResult = {
     fwVersion: string,
     timestamp: number,
     strokeCount: number,
-    uncertaintyDistance: number | null
+    uncertaintyDistance: number | null,
+    odometer: number,
+    tripmeter: number,
+    speed: number | null,
+    twrTimestamp: number
   };
 
   export type TagDiffResponse = {
