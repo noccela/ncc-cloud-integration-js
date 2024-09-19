@@ -25,6 +25,7 @@ class RobustWSChannel {
 	public _socket: WebSocket | null;
 	public _socketHandler: RequestHandler | null;
 	public _lastJwtUsed: string | null;
+    public _clockDiff: number;
 	public _tokenExpirationTimeout: null | ReturnType<typeof setTimeout> = null;
 	public _retryTimeout: null | ReturnType<typeof setTimeout> = null;
 	public _nextRetryInterval: number | null;
@@ -71,6 +72,7 @@ class RobustWSChannel {
         this._tokenExpirationTimeout = null;
         this._retryTimeout = null;
         this._nextRetryInterval = null;
+        this._clockDiff = 0;
 
         // Unpack dependencies.
         this._logger = null;
@@ -316,7 +318,12 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
         }
 
         const newToken: string = await getToken(authServerDomain);
-
+        
+        if (this._lastJwtUsed == newToken){
+            this._logger?.error("Received same token from the getToken function than the previous one.");
+        } else{
+            this._logger?.debug("Received fresh token from the getToken function.", null);
+        }
         this._logger?.debug("Got new token, sending to cloud", null);
 
         // Send the new token as a request.
@@ -361,13 +368,19 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
             throw Error("Received invalid token information");
         }
 
-        // Calculate timestamp after which token should be refreshed.
-        const tokenRefreshTimestamp: number = Math.trunc(tokenIssued + tokenSpan / 2);
-        const currentTimestamp: number = Math.trunc(Date.now() / 1000);
+        const currentTimestamp = Date.now();
+        const refreshTimestampInCloudTime = (tokenIssued + tokenSpan / 2) * 1000;
+        const refreshTimestampInLocalTime = refreshTimestampInCloudTime + this._clockDiff;
 
         // Get ms until token should be refreshed, with given minimum wait.
-        const timeUntilRefresh: number = Math.max((tokenRefreshTimestamp - currentTimestamp) * 1000, 1000) | 0;
+        let milliSecondsUntilRefresh: number = refreshTimestampInLocalTime - currentTimestamp;
+        
+        if (milliSecondsUntilRefresh < 0) {
+            const expirationInLocalTime = tokenExpiration * 1000 + this._clockDiff;
+            if (expirationInLocalTime > currentTimestamp) milliSecondsUntilRefresh = expirationInLocalTime - currentTimestamp - 60 * 1000;
+            if (milliSecondsUntilRefresh < 0) milliSecondsUntilRefresh = 1000;
 
+        }
         if (this._tokenExpirationTimeout != null) clearTimeout(this._tokenExpirationTimeout);
         const callback = async () => {
             try {
@@ -390,9 +403,9 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
         };
 
         this._logger?.debug(
-            `Refreshing the token at ${new Date(tokenRefreshTimestamp * 1000)}`, null
+            `Refreshing the token at ${new Date(tokenIssued * 1000 + milliSecondsUntilRefresh).toUTCString()}, clock diff: ${this._clockDiff}`, null
         );
-        this._tokenExpirationTimeout = setTimeout(callback, timeUntilRefresh);
+        this._tokenExpirationTimeout = setTimeout(callback, milliSecondsUntilRefresh);
     }
 
     /**
@@ -413,6 +426,7 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
             throw Error("Invalid getToken callback");
         }
 
+        const currentTimestamp = Date.now();
         const token: string = await getToken(authServerDomain);
         if (!token || typeof token !== "string" || !token.length) {
             throw Error("Got invalid token from getToken callback");
@@ -421,6 +435,8 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
         const authResult: Types.AuthenticateResult | null = await this.connect(token);
 
         if (authResult != null && this._options.automaticTokenRenewal) {
+            const tokenIssuedTimestamp = authResult.tokenIssued * 1000;
+            this._clockDiff = currentTimestamp - tokenIssuedTimestamp;
             this.scheduleTokenRefresh(authServerDomain,authResult.tokenExpiration,authResult.tokenIssued, getToken);
         }
     }

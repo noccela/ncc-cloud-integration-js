@@ -86,22 +86,13 @@ Check examples for how to do it using this library.
 
 ## Examples
 
-Fetch token with _client id_ and _client secret_.
-
 ```javascript
 import * as Ncc from "@noccela/ncc-cloud-integration"
 
-const {
-    accessToken, // JWT token.
-    expiresIn // Expiration in seconds.
-} = await Ncc.getToken(
-    **CLIENT ID**,
-    **CLIENT SECRET**
-);
 ```
 
-Connect to cloud with the access token. Account and site ID for the site is
-provided here. One channel handles one site's data.
+Connect with a persistent connection that is automatically re-authenticated when
+token has less than half of its time left.
 
 ```javascript
 const channel = new Ncc.EventChannel(
@@ -113,7 +104,7 @@ const channel = new Ncc.EventChannel(
 );
 
 // Connect to Noccela Cloud.
-await channel.connect(accessToken);
+await channel.connect(clientId, clientSecret);
 
 // Authenticated connection is available.
 ```

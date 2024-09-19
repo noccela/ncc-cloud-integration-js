@@ -67,6 +67,7 @@ export async function getToken(clientId: number, clientSecret: string, authOrigi
         // Error returned by authentication server.
         throw Error(`Authentication failed: ${authResponseObject.error}`);
     }
+    console.log("Successfully fetched new token from auth server.");
     let result: Types.AuthResult = {
         accessToken: authResponseObject.access_token,
         expiresIn: authResponseObject.expires_in

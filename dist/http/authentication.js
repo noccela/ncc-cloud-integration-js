@@ -56,6 +56,7 @@ export async function getToken(clientId, clientSecret, authOrigin = DEFAULT_AUTH
         // Error returned by authentication server.
         throw Error(`Authentication failed: ${authResponseObject.error}`);
     }
+    console.log("Successfully fetched new token from auth server.");
     let result = {
         accessToken: authResponseObject.access_token,
         expiresIn: authResponseObject.expires_in

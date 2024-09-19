@@ -1,6 +1,7 @@
 import { DEFAULT_OPTIONS, EVENT_TYPES } from "../constants/constants.js";
 import { DEFAULT_AUTH_ORIGIN, DEFAULT_API_HTTP_ORIGIN, } from "../constants/paths.js";
 import { getUniqueId, validateAccountAndSite, validateOptions, waitAsync, } from "../utils/utils.js";
+import * as NccAuth from "../http/authentication.js";
 import { RobustAuthenticatedWSChannel } from "./connectionhandler.js";
 import { getFilteredCallback, TagInitialStateFilter, AlertInitialStateFilter, LocationUpdateFilter, P2pDistanceUpdateFilter, TagDiffStreamFilter, TwrDataFilter, ContactTracingUpdateFilter, AlertDiffStreamFilter, EmptyFilter, BeaconInitialStateFilter, BeaconDiffStreamFilter } from "./filters.js";
 import { Dependencies, RegisteredEvent } from "./models.js";
@@ -90,16 +91,6 @@ export class EventChannel {
         }
     }
     /**
-     * Create connection to Noccela cloud and authenticate the connection.
-     *
-     * @param {string} jwt JWT token received from authentication server.
-     * @memberof EventChannel
-     * @preserve
-     */
-    async connect(jwt) {
-        await this._connection.connect(jwt);
-    }
-    /**
      * Fetch new token from authentication server and connect the WebSocket in
      * one go. Also automatically schedules new token retrieval if 'automaticTokenRenewal'
      * is true in options.
@@ -113,6 +104,24 @@ export class EventChannel {
      */
     async connectPersistent(getToken, authServerDomain = DEFAULT_AUTH_ORIGIN) {
         return this._connection.createAuthenticatedConnection(authServerDomain, getToken);
+    }
+    /**
+     * Fetch new token from authentication server using default function and connect the WebSocket in
+     * one go. Also automatically schedules new token retrieval if 'automaticTokenRenewal'
+     * is true in options.
+     *
+     * @param {number} clientId clientId of the application.
+     * @param {string} clientSecret clientSecret of the application.
+     * @returns {Promise} Promise that resolves when connection is established.
+     * @memberof EventChannel
+     * @preserve
+     */
+    async connect(clientId, clientSecret, authServerDomain = DEFAULT_AUTH_ORIGIN) {
+        const getToken = async (domain) => {
+            const tokenResponse = await NccAuth.getToken(clientId, clientSecret, domain);
+            return tokenResponse.accessToken;
+        };
+        return this.connectPersistent(getToken, authServerDomain);
     }
     /**
      * Close connection.
@@ -304,13 +313,114 @@ export class EventChannel {
         return this.register(EVENT_TYPES["TWR_DATA"], twrFilter, callback);
     }
     /**
-    * Register to site information.
-    *
-    * The callback will be invoked when first registered and when the connection
-    * is re-established.
-    *
-    * @param {(err: String, payload: Object) => void} callback
-    */
+     * Reset tag's tripmeter.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async resetTagTripmeter(deviceId) {
+        await this.modifyTag(deviceId, null, true);
+    }
+    /**
+     * Modify tag's name.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async renameTag(deviceId, newName) {
+        await this.modifyTag(deviceId, newName, false);
+    }
+    /**
+     * Modify tag's name and/or reset tripmeter.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async modifyTag(deviceId, newName, resetTripmeter) {
+        const msg = {
+            uniqueId: getUniqueId(),
+            action: "modifyTag",
+            payload: {
+                device: deviceId,
+                newName: newName,
+                resetTripmeter: resetTripmeter
+            }
+        };
+        await this._connection.sendRequest(msg, null);
+    }
+    /**
+     * Fetch image by id. For example image of tag or tag group.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async getImage(imageId) {
+        this._validateConnection();
+        const msg = {
+            uniqueId: getUniqueId(),
+            action: "getImage",
+            payload: {
+                imageId: imageId
+            }
+        };
+        const payload = await this._connection.sendRequest(msg, null);
+        if (payload == null)
+            return null;
+        let image = {
+            name: payload.payload.name,
+            contentType: payload.payload.contentType,
+            data: payload.payload.data
+        };
+        return image;
+    }
+    /**
+     * Fetch site's workflows. Also removed flows are returned
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async getWorkflows() {
+        this._validateConnection();
+        const msg = {
+            uniqueId: getUniqueId(),
+            action: "getWorkflows",
+            payload: {}
+        };
+        const payload = await this._connection.sendRequest(msg, null);
+        if (payload == null)
+            return null;
+        return payload.payload;
+    }
+    /**
+     * Fetch results from specified workflow.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async getWorkflowResults(flowId, start, stop) {
+        this._validateConnection();
+        const msg = {
+            uniqueId: getUniqueId(),
+            action: "getWorkflowResults",
+            payload: {
+                flowId: flowId,
+                start: start,
+                stop: stop
+            }
+        };
+        const payload = await this._connection.sendRequest(msg, null);
+        if (payload == null)
+            return null;
+        return payload.payload;
+    }
+    /**
+     * Register to site information.
+     *
+     * The callback will be invoked when first registered and when the connection
+     * is re-established.
+     *
+     * @param {(err: String, payload: Object) => void} callback
+     */
     async registerSiteInformation(callback) {
         const filter = {
             deviceIds: null

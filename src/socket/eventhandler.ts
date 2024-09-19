@@ -9,6 +9,7 @@ import {
     validateOptions,
     waitAsync,
 } from "../utils/utils.js";
+import * as NccAuth from "../http/authentication.js";
 import { RobustAuthenticatedWSChannel } from "./connectionhandler.js";
 import {
     getFilteredCallback,
@@ -155,17 +156,6 @@ export class EventChannel {
     }
 
     /**
-     * Create connection to Noccela cloud and authenticate the connection.
-     *
-     * @param {string} jwt JWT token received from authentication server.
-     * @memberof EventChannel
-     * @preserve
-     */
-    async connect(jwt: string): Promise<void> {
-        await this._connection.connect(jwt);
-    }
-
-    /**
      * Fetch new token from authentication server and connect the WebSocket in
      * one go. Also automatically schedules new token retrieval if 'automaticTokenRenewal'
      * is true in options.
@@ -182,6 +172,25 @@ export class EventChannel {
             authServerDomain,
             getToken
         );
+    }
+
+    /**
+     * Fetch new token from authentication server using default function and connect the WebSocket in
+     * one go. Also automatically schedules new token retrieval if 'automaticTokenRenewal'
+     * is true in options.
+     *
+     * @param {number} clientId clientId of the application.
+     * @param {string} clientSecret clientSecret of the application.
+     * @returns {Promise} Promise that resolves when connection is established.
+     * @memberof EventChannel
+     * @preserve
+     */
+    async connect(clientId: number, clientSecret: string, authServerDomain: string = DEFAULT_AUTH_ORIGIN): Promise<void> {
+        const getToken = async (domain: string) => {
+            const tokenResponse = await NccAuth.getToken(clientId, clientSecret, domain);
+            return tokenResponse.accessToken;
+        };
+        return this.connectPersistent(getToken, authServerDomain);
     }
 
     /**
@@ -428,8 +437,111 @@ export class EventChannel {
             callback
         );
     }
+    /**
+     * Reset tag's tripmeter.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async resetTagTripmeter(deviceId: number): Promise<void> {
+        await this.modifyTag(deviceId, null, true);
+    }
+    /**
+     * Modify tag's name.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async renameTag(deviceId: number, newName: string): Promise<void> {
+        await this.modifyTag(deviceId, newName, false);
+    }
+    /**
+     * Modify tag's name and/or reset tripmeter.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async modifyTag(deviceId: number, newName: string | null, resetTripmeter: boolean): Promise<void> {
+        const msg: Types.Request = {
+            uniqueId: getUniqueId(),
+            action: "modifyTag",
+            payload: {
+                device: deviceId,
+                newName: newName,
+                resetTripmeter: resetTripmeter
+            }
+        };
+        await this._connection.sendRequest(msg, null);
+    }
 
-     /**
+    /**
+     * Fetch image by id. For example image of tag or tag group.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async getImage(imageId: number): Promise<Types.GetImageResponse | null> {
+        this._validateConnection();
+        const msg: Types.Request = {
+            uniqueId: getUniqueId(),
+            action: "getImage",
+            payload: {
+                imageId:imageId
+            }
+        };
+        const payload: Types.CloudResponse | undefined = await this._connection.sendRequest(msg, null);
+
+        if (payload == null) return null;
+        let image : Types.GetImageResponse = {
+            name: payload.payload.name,
+            contentType: payload.payload.contentType,
+            data: payload.payload.data
+        };     
+        return image;
+    }
+    /**
+     * Fetch site's workflows. Also removed flows are returned
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async getWorkflows(): Promise<Types.Workflow[] | null> {
+        this._validateConnection();
+        const msg: Types.Request = {
+            uniqueId: getUniqueId(),
+            action: "getWorkflows",
+            payload: {}
+        };
+        const payload: Types.CloudResponse | undefined = await this._connection.sendRequest(msg, null);
+
+        if (payload == null) return null;
+    
+        return payload.payload;
+    }
+    /**
+     * Fetch results from specified workflow.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    async getWorkflowResults(flowId: number, start: string | null, stop: string | null): Promise<Types.WorkflowResult[] | null> {
+        this._validateConnection();
+        const msg: Types.Request = {
+            uniqueId: getUniqueId(),
+            action: "getWorkflowResults",
+            payload: {
+                flowId:flowId,
+                start: start,
+                stop: stop
+            }
+        };
+        const payload: Types.CloudResponse | undefined = await this._connection.sendRequest(msg, null);
+
+        if (payload == null) return null;
+
+        return payload.payload;
+    }
+    /**
      * Register to site information.
      *
      * The callback will be invoked when first registered and when the connection

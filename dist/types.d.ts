@@ -93,6 +93,174 @@ export declare type BeaconDiff = {
     charging?: boolean | undefined;
     voltage?: number | undefined;
 };
+export declare type GetImageResponse = {
+    name: string;
+    contentType: string;
+    data: string;
+};
+export declare type WorkflowResult = {
+    ts: number;
+    tags: number[];
+    tagNames: string[];
+    areaId: number | null;
+    guid: string;
+    steps: WorkflowStepResult[];
+};
+export declare type WorkflowStepResult = {
+    id: number;
+    name: string;
+    ts: number;
+    stopTs: number | null;
+    ep: number | null;
+    condition: number;
+    area: number | null;
+};
+export declare type Workflow = {
+    id: number;
+    name: string;
+    removed: boolean;
+    flow: WorkflowData;
+};
+export declare type WorkflowData = {
+    links: WorkflowLink[];
+    steps: WorkflowStep[];
+    tags: TagRestrictionForFlows;
+    allowOverlapping: boolean;
+    manuallyStartable: boolean;
+    isMultiTag: boolean;
+    disableAutoStepStart: boolean;
+};
+export declare type WorkflowLink = {
+    from: number;
+    to: number;
+    fromConnector: string;
+};
+export declare type WorkflowStep = {
+    id: number;
+    left: number;
+    top: number;
+    name: string;
+    type: number;
+    step: WorkflowStepData | null;
+    action: WorkflowStepAction | null;
+};
+export declare type WorkflowStepData = {
+    delay: number | null;
+    canMoveWithinDelay: boolean;
+    timeout: number | null;
+    writeToDb: boolean;
+    previousAreaCondition: number;
+    condition: number;
+    areasForStep: number[] | null;
+    tags: TagRestrictionForMultiTagStep | null;
+    tagsForAllSteps: TagRestrictionForAllSteps | null;
+    areas: AreaRestrictionForStep | null;
+    tagProximity: TagProximityRestriction | null;
+    tagMotion: TagMotionRestriction | null;
+    externalTrigger: ExternalTrigger | null;
+    uiButton: UiButtonStep | null;
+    uiToggleButton: UiToggleButtonStep | null;
+};
+export declare type WorkflowStepAction = {
+    type: number;
+    tagsForAllActions: TagRestrictionForAllSteps;
+    ledBuzzer: LedOrBuzzerAction | null;
+    sms: SmsAction | null;
+    customAlert: CustomAlertAction | null;
+    renameTag: RenameTagAction | null;
+    sleep: FlowSleepAction | null;
+    clearGroup: ClearGroupAction | null;
+    email: EmailAction | null;
+    signalFlash: SignalFlashAction | null;
+    startStep: StartStepAction | null;
+    setTagGroup: SetTagGroupAction | null;
+};
+export declare type SetTagGroupAction = {
+    groupId: number;
+};
+export declare type StartStepAction = {
+    stepName: string;
+};
+export declare type SignalFlashAction = {
+    deviceId: number;
+    lightSeconds: number;
+    soundSeconds: number;
+};
+export declare type EmailAction = {
+    recipients: string;
+    message: string;
+    subject: string;
+};
+export declare type ClearGroupAction = {
+    clearMain: boolean;
+    clearSecondary: boolean;
+};
+export declare type FlowSleepAction = {
+    seconds: number;
+};
+export declare type RenameTagAction = {
+    name: string;
+};
+export declare type CustomAlertAction = {
+    alertType: number;
+    message: string;
+};
+export declare type SmsAction = {
+    recipients: string;
+    message: string;
+};
+export declare type LedOrBuzzerAction = {
+    ledDuration: number | null;
+    ledMode: number;
+    blinkFrequency: number;
+    buzzerDuration: number | null;
+    buzzerMode: number;
+    ledOff: boolean;
+    buzzerOff: boolean;
+};
+export declare type UiToggleButtonStep = {
+    buttonText0: string;
+    buttonText1: string;
+};
+export declare type UiButtonStep = {
+    buttonText: string;
+};
+export declare type ExternalTrigger = {
+    identifier: string;
+};
+export declare type TagMotionRestriction = {
+    movementNeeded: number;
+    movementPeriod: number;
+};
+export declare type TagProximityRestriction = {
+    distance: number | null;
+    lowDistance: number | null;
+    includeGroup: number | null;
+    excludeGroup: number | null;
+    batteryCondition: number | null;
+    cooldown: number;
+    bothTagsWithActionsAndResult: boolean;
+    sameTagsAsPreviousStep: boolean;
+};
+export declare type AreaRestrictionForStep = {
+    areaId: number;
+    entrancePoints: number[] | null;
+};
+export declare type TagRestrictionForAllSteps = {
+    allTags: boolean;
+    tagGroups: number[] | null;
+    inFlowCondition: number;
+};
+export declare type TagRestrictionForFlows = {
+    allTags: boolean;
+    tagGroups: number[] | null;
+    deviceIds: number[] | null;
+};
+export declare type TagRestrictionForMultiTagStep = {
+    groupId: number;
+    amount: number;
+    condition: number;
+};
 export interface TagInitialStateResponse extends Dictionary<InitialTagState> {
 }
 export declare type InitialTagState = {

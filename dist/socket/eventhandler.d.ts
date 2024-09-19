@@ -34,14 +34,6 @@ export declare class EventChannel {
     constructor(account: number, site: number, userOptions?: Types.UserOptions | null, httpOrigin?: string);
     _reregisterEvents(): Promise<void>;
     /**
-     * Create connection to Noccela cloud and authenticate the connection.
-     *
-     * @param {string} jwt JWT token received from authentication server.
-     * @memberof EventChannel
-     * @preserve
-     */
-    connect(jwt: string): Promise<void>;
-    /**
      * Fetch new token from authentication server and connect the WebSocket in
      * one go. Also automatically schedules new token retrieval if 'automaticTokenRenewal'
      * is true in options.
@@ -54,6 +46,18 @@ export declare class EventChannel {
      * @preserve
      */
     connectPersistent(getToken: (domain: string) => Promise<string>, authServerDomain?: string): Promise<void>;
+    /**
+     * Fetch new token from authentication server using default function and connect the WebSocket in
+     * one go. Also automatically schedules new token retrieval if 'automaticTokenRenewal'
+     * is true in options.
+     *
+     * @param {number} clientId clientId of the application.
+     * @param {string} clientSecret clientSecret of the application.
+     * @returns {Promise} Promise that resolves when connection is established.
+     * @memberof EventChannel
+     * @preserve
+     */
+    connect(clientId: number, clientSecret: string, authServerDomain?: string): Promise<void>;
     /**
      * Close connection.
      *
@@ -151,13 +155,55 @@ export declare class EventChannel {
      */
     registerTwrStream(callback: (err: string | null, payload: Types.TwrDataResponse) => void, tagDeviceIds?: number[] | null, beaconDeviceIds?: number[] | null): Promise<string>;
     /**
-    * Register to site information.
-    *
-    * The callback will be invoked when first registered and when the connection
-    * is re-established.
-    *
-    * @param {(err: String, payload: Object) => void} callback
-    */
+     * Reset tag's tripmeter.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    resetTagTripmeter(deviceId: number): Promise<void>;
+    /**
+     * Modify tag's name.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    renameTag(deviceId: number, newName: string): Promise<void>;
+    /**
+     * Modify tag's name and/or reset tripmeter.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    modifyTag(deviceId: number, newName: string | null, resetTripmeter: boolean): Promise<void>;
+    /**
+     * Fetch image by id. For example image of tag or tag group.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    getImage(imageId: number): Promise<Types.GetImageResponse | null>;
+    /**
+     * Fetch site's workflows. Also removed flows are returned
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    getWorkflows(): Promise<Types.Workflow[] | null>;
+    /**
+     * Fetch results from specified workflow.
+     *
+     * @memberof EventChannel
+     * @preserve
+     */
+    getWorkflowResults(flowId: number, start: string | null, stop: string | null): Promise<Types.WorkflowResult[] | null>;
+    /**
+     * Register to site information.
+     *
+     * The callback will be invoked when first registered and when the connection
+     * is re-established.
+     *
+     * @param {(err: String, payload: Object) => void} callback
+     */
     registerSiteInformation(callback: (err: string | null, payload: Types.SiteInformationResponse) => void): Promise<string>;
     /**
      * Register to an API event, such as location update and tag metadata streams.

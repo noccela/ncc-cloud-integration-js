@@ -14,6 +14,7 @@ declare class RobustWSChannel {
     _socket: WebSocket | null;
     _socketHandler: RequestHandler | null;
     _lastJwtUsed: string | null;
+    _clockDiff: number;
     _tokenExpirationTimeout: null | ReturnType<typeof setTimeout>;
     _retryTimeout: null | ReturnType<typeof setTimeout>;
     _nextRetryInterval: number | null;

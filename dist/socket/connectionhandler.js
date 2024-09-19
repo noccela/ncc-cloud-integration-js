@@ -48,6 +48,7 @@ class RobustWSChannel {
         this._tokenExpirationTimeout = null;
         this._retryTimeout = null;
         this._nextRetryInterval = null;
+        this._clockDiff = 0;
         // Unpack dependencies.
         this._logger = null;
         ({ logger: this._logger } = dependencyContainer);
@@ -226,7 +227,7 @@ class RobustWSChannel {
 export class RobustAuthenticatedWSChannel extends RobustWSChannel {
     // Fetch a new token and re-authenticate with the connection.
     async _refreshToken(authServerDomain, getToken) {
-        var _a, _b, _c;
+        var _a, _b, _c, _d, _e;
         // Fetch new token from auth. server.
         (_a = this._logger) === null || _a === void 0 ? void 0 : _a.log("Refreshing access token...");
         // Connection is down currently, throw and try again later.
@@ -234,7 +235,13 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
             throw Error(SOCKET_HANDLER_MISSING_ERROR);
         }
         const newToken = await getToken(authServerDomain);
-        (_b = this._logger) === null || _b === void 0 ? void 0 : _b.debug("Got new token, sending to cloud", null);
+        if (this._lastJwtUsed == newToken) {
+            (_b = this._logger) === null || _b === void 0 ? void 0 : _b.error("Received same token from the getToken function than the previous one.");
+        }
+        else {
+            (_c = this._logger) === null || _c === void 0 ? void 0 : _c.debug("Received fresh token from the getToken function.", null);
+        }
+        (_d = this._logger) === null || _d === void 0 ? void 0 : _d.debug("Got new token, sending to cloud", null);
         // Send the new token as a request.
         let req = {
             uniqueId: getUniqueId(),
@@ -245,7 +252,7 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
         };
         const response = await this._socketHandler.sendRequest(req);
         const authResponse = response.payload;
-        (_c = this._logger) === null || _c === void 0 ? void 0 : _c.log(`Token refreshed successfully, new expiration ${authResponse.tokenExpiration}`);
+        (_e = this._logger) === null || _e === void 0 ? void 0 : _e.log(`Token refreshed successfully, new expiration ${authResponse.tokenExpiration}`);
         // Persist the token in internal state so the connection can be recreated.
         this._lastJwtUsed = newToken;
         return authResponse;
@@ -269,11 +276,18 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
         if (typeof tokenSpan !== "number" || tokenSpan <= 0) {
             throw Error("Received invalid token information");
         }
-        // Calculate timestamp after which token should be refreshed.
-        const tokenRefreshTimestamp = Math.trunc(tokenIssued + tokenSpan / 2);
-        const currentTimestamp = Math.trunc(Date.now() / 1000);
+        const currentTimestamp = Date.now();
+        const refreshTimestampInCloudTime = (tokenIssued + tokenSpan / 2) * 1000;
+        const refreshTimestampInLocalTime = refreshTimestampInCloudTime + this._clockDiff;
         // Get ms until token should be refreshed, with given minimum wait.
-        const timeUntilRefresh = Math.max((tokenRefreshTimestamp - currentTimestamp) * 1000, 1000) | 0;
+        let milliSecondsUntilRefresh = refreshTimestampInLocalTime - currentTimestamp;
+        if (milliSecondsUntilRefresh < 0) {
+            const expirationInLocalTime = tokenExpiration * 1000 + this._clockDiff;
+            if (expirationInLocalTime > currentTimestamp)
+                milliSecondsUntilRefresh = expirationInLocalTime - currentTimestamp - 60 * 1000;
+            if (milliSecondsUntilRefresh < 0)
+                milliSecondsUntilRefresh = 1000;
+        }
         if (this._tokenExpirationTimeout != null)
             clearTimeout(this._tokenExpirationTimeout);
         const callback = async () => {
@@ -290,8 +304,8 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
                 setTimeout(callback, this._options.tokenRefreshFailureRetryTimeout);
             }
         };
-        (_a = this._logger) === null || _a === void 0 ? void 0 : _a.debug(`Refreshing the token at ${new Date(tokenRefreshTimestamp * 1000)}`, null);
-        this._tokenExpirationTimeout = setTimeout(callback, timeUntilRefresh);
+        (_a = this._logger) === null || _a === void 0 ? void 0 : _a.debug(`Refreshing the token at ${new Date(tokenIssued * 1000 + milliSecondsUntilRefresh).toUTCString()}, clock diff: ${this._clockDiff}`, null);
+        this._tokenExpirationTimeout = setTimeout(callback, milliSecondsUntilRefresh);
     }
     /**
      * Fetch token, create an authenticated connection to backend and schedule
@@ -309,12 +323,15 @@ export class RobustAuthenticatedWSChannel extends RobustWSChannel {
         if (!getToken || typeof getToken !== "function") {
             throw Error("Invalid getToken callback");
         }
+        const currentTimestamp = Date.now();
         const token = await getToken(authServerDomain);
         if (!token || typeof token !== "string" || !token.length) {
             throw Error("Got invalid token from getToken callback");
         }
         const authResult = await this.connect(token);
         if (authResult != null && this._options.automaticTokenRenewal) {
+            const tokenIssuedTimestamp = authResult.tokenIssued * 1000;
+            this._clockDiff = currentTimestamp - tokenIssuedTimestamp;
             this.scheduleTokenRefresh(authServerDomain, authResult.tokenExpiration, authResult.tokenIssued, getToken);
         }
     }
