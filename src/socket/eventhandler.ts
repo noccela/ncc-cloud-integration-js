@@ -339,10 +339,24 @@ export class EventChannel {
         return response?.payload as Types.GetLayoutResponse;
     }
 
-    async fillPolygon(masterPolygon: Types.Polygon, slavePolygons: Types.Polygon[]):Promise<Types.FillPolygonResponse>{
+    async fillPolygon(masterPolygon: Types.LayoutItem, slavePolygons: Types.LayoutItem[]):Promise<Types.LayoutItem[]>{
+        
+        let masterPoly: Types.Polygon = {
+            x: Math.round(masterPolygon.maxX - (masterPolygon.maxX - masterPolygon.minX) / 2),
+            y: Math.round(masterPolygon.maxY - (masterPolygon.maxY - masterPolygon.minY) / 2),
+            polygonPoints: masterPolygon.polygonPoints
+        };
+        let slavePolys: Types.Polygon[] = [];
+        for(const slave of slavePolygons){
+            slavePolys.push({
+                x: Math.round(slave.maxX - (slave.maxX - slave.minX) / 2),
+                y: Math.round(slave.maxY - (slave.maxY - slave.minY) / 2),
+                polygonPoints: slave.polygonPoints
+            });
+        }
         const payload: Types.FillPolygonRequest = {
-            masterPolygon: masterPolygon,
-            slavePolygons: slavePolygons
+            masterPolygon: masterPoly,
+            slavePolygons: slavePolys
         };
         const msg: Types.Request = {
             uniqueId: getUniqueId(),
@@ -350,7 +364,22 @@ export class EventChannel {
             payload: payload
         };
         const response: Types.CloudResponse | undefined = await this._connection.sendRequest(msg, null);
-        return response?.payload as Types.FillPolygonResponse;
+        let resp: Types.FillPolygonResponse = response?.payload as Types.FillPolygonResponse;
+        let responseItems = [];
+        for(let i = 0; i < resp.slavePolygons.length; i++){
+            let responseItem: Types.Polygon | undefined = resp.slavePolygons[i];
+            if (responseItem == null) continue;
+            let newItem = JSON.parse(JSON.stringify(slavePolygons[i]));
+            let xArray = responseItem.polygonPoints.map(a => responseItem?.x ?? 0 + a.x);
+            let yArray = responseItem.polygonPoints.map(a => responseItem?.y ?? 0 + a.y);
+            newItem.minX = Math.min(...xArray);
+            newItem.maxX = Math.max(...xArray);
+            newItem.minY = Math.min(...yArray);
+            newItem.maxY = Math.max(...yArray);
+            newItem.polygonPoints = responseItem.polygonPoints;
+            responseItems.push(newItem);
+        }
+        return responseItems;
     }
 
     async saveLayout(majorId: number, majorNumber: number, comment: string, floors: Types.LayoutFloor[], latitude: number | null = null, longitude: number | null = null, azimuthAngle: number | null = null) : Promise<Types.SaveLayoutResponse>{

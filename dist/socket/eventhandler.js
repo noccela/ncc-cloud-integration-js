@@ -244,9 +244,22 @@ export class EventChannel {
         return response === null || response === void 0 ? void 0 : response.payload;
     }
     async fillPolygon(masterPolygon, slavePolygons) {
+        let masterPoly = {
+            x: Math.round(masterPolygon.maxX - (masterPolygon.maxX - masterPolygon.minX) / 2),
+            y: Math.round(masterPolygon.maxY - (masterPolygon.maxY - masterPolygon.minY) / 2),
+            polygonPoints: masterPolygon.polygonPoints
+        };
+        let slavePolys = [];
+        for (const slave of slavePolygons) {
+            slavePolys.push({
+                x: Math.round(slave.maxX - (slave.maxX - slave.minX) / 2),
+                y: Math.round(slave.maxY - (slave.maxY - slave.minY) / 2),
+                polygonPoints: slave.polygonPoints
+            });
+        }
         const payload = {
-            masterPolygon: masterPolygon,
-            slavePolygons: slavePolygons
+            masterPolygon: masterPoly,
+            slavePolygons: slavePolys
         };
         const msg = {
             uniqueId: getUniqueId(),
@@ -254,7 +267,23 @@ export class EventChannel {
             payload: payload
         };
         const response = await this._connection.sendRequest(msg, null);
-        return response === null || response === void 0 ? void 0 : response.payload;
+        let resp = response === null || response === void 0 ? void 0 : response.payload;
+        let responseItems = [];
+        for (let i = 0; i < resp.slavePolygons.length; i++) {
+            let responseItem = resp.slavePolygons[i];
+            if (responseItem == null)
+                continue;
+            let newItem = JSON.parse(JSON.stringify(slavePolygons[i]));
+            let xArray = responseItem.polygonPoints.map(a => { var _a; return (_a = responseItem === null || responseItem === void 0 ? void 0 : responseItem.x) !== null && _a !== void 0 ? _a : 0 + a.x; });
+            let yArray = responseItem.polygonPoints.map(a => { var _a; return (_a = responseItem === null || responseItem === void 0 ? void 0 : responseItem.y) !== null && _a !== void 0 ? _a : 0 + a.y; });
+            newItem.minX = Math.min(...xArray);
+            newItem.maxX = Math.max(...xArray);
+            newItem.minY = Math.min(...yArray);
+            newItem.maxY = Math.max(...yArray);
+            newItem.polygonPoints = responseItem.polygonPoints;
+            responseItems.push(newItem);
+        }
+        return responseItems;
     }
     async saveLayout(majorId, majorNumber, comment, floors, latitude = null, longitude = null, azimuthAngle = null) {
         let uuid = getUniqueId();

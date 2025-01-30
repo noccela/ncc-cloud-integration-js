@@ -124,7 +124,7 @@ export declare class EventChannel {
      */
     registerInitialTagState(callback: (err: string | null, payload: Types.TagInitialStateResponse) => void, deviceIds?: number[] | null): Promise<string>;
     getLayout(minorId?: number | null): Promise<Types.GetLayoutResponse>;
-    fillPolygon(masterPolygon: Types.Polygon, slavePolygons: Types.Polygon[]): Promise<Types.FillPolygonResponse>;
+    fillPolygon(masterPolygon: Types.LayoutItem, slavePolygons: Types.LayoutItem[]): Promise<Types.LayoutItem[]>;
     saveLayout(majorId: number, majorNumber: number, comment: string, floors: Types.LayoutFloor[], latitude?: number | null, longitude?: number | null, azimuthAngle?: number | null): Promise<Types.SaveLayoutResponse>;
     calibratePositions(beaconPositions: Types.BeaconPosition[], tagPoints: number[] | null, callback: (payload: Types.CalibratePositionsResponse) => void): Promise<void>;
     /**
