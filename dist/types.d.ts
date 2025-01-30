@@ -376,6 +376,69 @@ export interface ContactTracingUpdateItem {
     source: string;
     level: string;
 }
+export interface AvailableBeaconsResponse extends Array<AvailableBeaconItem> {
+}
+export interface AvailableBeaconItem {
+    deviceId: number;
+    deviceModel: string;
+    lastContact: number | null;
+}
+export declare type FillPolygonResponse = {
+    slavePolygons: Polygon[];
+};
+export declare type FillPolygonRequest = {
+    masterPolygon: Polygon;
+    slavePolygons: Polygon[];
+};
+export declare type Polygon = {
+    x: number;
+    y: number;
+    polygonPoints: PolygonPoint[];
+};
+export declare type CalibratePositionsResponse = {
+    beaconPositions: CalibratedBeaconPosition[];
+    tagPointPositions: TagPointPosition[];
+    rectangleWidth: number | null;
+    rectangleHeight: number | null;
+    ignoredBeaconsFromCalibration: number[];
+};
+export declare type CalibratedBeaconPosition = {
+    deviceId: number;
+    x: number;
+    y: number;
+    z: number;
+    floorId: number;
+};
+export declare type TagPointPosition = {
+    id: number;
+    x: number;
+    y: number;
+    z: number;
+    floorId: number;
+};
+export declare type CalibratePositionsRequest = {
+    positions: BeaconPosition[];
+    tagPoints: number[];
+    tagPointData: TagPointDataItem[] | null;
+    maxDrift: number | null;
+    shiftUp: boolean;
+    amountOfBeaconsThatCanBeLeftOut: number;
+};
+export declare type BeaconPosition = {
+    deviceId: number;
+    x: number;
+    y: number;
+    z: number;
+    positionStatus: number;
+};
+export declare type TagPointDataItem = {
+    deviceId: number;
+    id: number;
+    x: number | null;
+    y: number | null;
+    z: number | null;
+    distances: object;
+};
 export declare type RegisterRequest = {
     eventType: string;
     filter: MessageFilter;
@@ -424,6 +487,48 @@ export interface DetailedSiteLayoutInformation {
     start: Date | null;
     stop: Date | null;
 }
+export declare type GetLayoutRequest = {
+    minorId: number | null;
+};
+export declare type GetLayoutResponse = {
+    floors: LayoutFloor[];
+    latitude: number | null;
+    longitude: number | null;
+    azimuthAngle: number | null;
+};
+export declare type SaveLayoutResponse = {
+    layoutIds: SaveLayoutResponseItem[];
+};
+export declare type SaveLayoutResponseItem = {
+    majorId: number;
+    majorNumber: number;
+    minorId: number;
+    minorNumber: number;
+};
+export declare type SaveLayoutRequest = {
+    guid: string;
+    layout: SaveLayoutItem;
+};
+export declare type SaveLayoutItem = {
+    account: number;
+    site: number;
+    layouts: LayoutsRequest;
+    reloadSite: boolean;
+};
+export declare type LayoutsRequest = {
+    remove: number[];
+    update: object[];
+    create: CreateLayoutRequest[];
+};
+export declare type CreateLayoutRequest = {
+    comment: string;
+    majorId: number | null;
+    majorNumber: number | null;
+    latitude: number | null;
+    longitude: number | null;
+    azimuthAngle: number | null;
+    floors: LayoutFloor[];
+};
 export declare type SiteLayout = {
     floors: LayoutFloor[];
 };

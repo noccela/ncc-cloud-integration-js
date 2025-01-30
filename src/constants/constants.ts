@@ -27,7 +27,8 @@ export const EVENT_TYPES = {
     ALERT_DIFF: "ALERT_DIFF",
     LAYOUT_UPDATE: "LAYOUT_UPDATE",
     BEACON_STATE: "BEACON_STATE",
-    BEACON_DIFF: "BEACON_DIFF"
+    BEACON_DIFF: "BEACON_DIFF",
+    CALIBRATE_POSITIONS: "CALIBRATE_POSITIONS" 
 };
 
 // Default settings that are extended or overridden by user provided ones.

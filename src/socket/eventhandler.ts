@@ -326,6 +326,92 @@ export class EventChannel {
             callback
         );
     }
+    async getLayout(minorId: number | null = null) : Promise<Types.GetLayoutResponse>{
+        const payload: Types.GetLayoutRequest = {
+            minorId: minorId
+        };
+        const msg: Types.Request = {
+            uniqueId: getUniqueId(),
+            action: "getLayout",
+            payload: payload
+        };
+        const response: Types.CloudResponse | undefined = await this._connection.sendRequest(msg, null);
+        return response?.payload as Types.GetLayoutResponse;
+    }
+
+    async fillPolygon(masterPolygon: Types.Polygon, slavePolygons: Types.Polygon[]):Promise<Types.FillPolygonResponse>{
+        const payload: Types.FillPolygonRequest = {
+            masterPolygon: masterPolygon,
+            slavePolygons: slavePolygons
+        };
+        const msg: Types.Request = {
+            uniqueId: getUniqueId(),
+            action: "fillPolygon",
+            payload: payload
+        };
+        const response: Types.CloudResponse | undefined = await this._connection.sendRequest(msg, null);
+        return response?.payload as Types.FillPolygonResponse;
+    }
+
+    async saveLayout(majorId: number, majorNumber: number, comment: string, floors: Types.LayoutFloor[], latitude: number | null = null, longitude: number | null = null, azimuthAngle: number | null = null) : Promise<Types.SaveLayoutResponse>{
+        let uuid = getUniqueId();
+        let request: Types.SaveLayoutRequest = {
+            guid: "93243b0e-6fbf-4a68-a6c1-6da4b4e3c3e4",
+            layout: {
+                account: this._connection.account,
+                site: this._connection.site,
+                layouts: {
+                    remove: [],
+                    update: [],
+                    create: [{
+                        comment: comment,
+                        majorId: majorId,
+                        majorNumber: majorNumber,
+                        floors: floors,
+                        latitude: latitude,
+                        longitude: longitude,
+                        azimuthAngle: azimuthAngle
+
+                    }]
+                },
+                reloadSite: true
+            }
+        };
+        const msg: Types.Request = {
+            uniqueId: uuid,
+            action: "savelayout",
+            payload: request
+        };
+        const payload: Types.CloudResponse | undefined = await this._connection.sendRequest(msg, null);
+        return payload?.payload as Types.SaveLayoutResponse;
+    }
+
+    async calibratePositions(beaconPositions: Types.BeaconPosition[], tagPoints: number[] | null, callback: (payload: Types.CalibratePositionsResponse) => void): Promise<void> {
+        let uuid = getUniqueId();
+
+        if(tagPoints == null) tagPoints = [];
+        const request: Types.CalibratePositionsRequest = {
+            positions: beaconPositions,
+            tagPoints: tagPoints,
+            tagPointData: null,
+            maxDrift: null,
+            shiftUp: false,
+            amountOfBeaconsThatCanBeLeftOut: 0
+        };
+        const msg: Types.Request = {
+            uniqueId: uuid,
+            action: "calibratePositions",
+            payload: request
+        };
+        const responseAction = "calibratePositionsResponse";
+        let unregisterCallback = (payload: Types.CalibratePositionsResponse) => {
+            this._connection.unregisterServerCallback(responseAction, uuid);
+            callback(payload);
+        };
+
+        this._connection.registerServerCallback(responseAction,uuid,unregisterCallback);
+        await this._connection.sendRequest(msg, null);
+    }
 
     /**
      * Register to incremental updates for tags' state on a given site.
@@ -436,6 +522,27 @@ export class EventChannel {
             twrFilter,
             callback
         );
+    }
+    async getAvailableBeacons() : Promise<Types.AvailableBeaconsResponse | null>{
+        const msg: Types.Request = {
+            uniqueId: getUniqueId(),
+            action: "getAvailableBeacons",
+            payload: {}
+        };
+        const payload: Types.CloudResponse | undefined = await this._connection.sendRequest(msg, null);
+
+        if (payload == null) return null;
+        let response : Types.AvailableBeaconsResponse = [];
+        for(const item of payload.payload){
+            let beaconItem : Types.AvailableBeaconItem = {
+                deviceId: item.deviceId,
+                deviceModel: item.deviceModel,
+                lastContact: item.lastContact
+            };
+            response.push(beaconItem);
+        }
+        
+        return response;
     }
     /**
      * Reset tag's tripmeter.

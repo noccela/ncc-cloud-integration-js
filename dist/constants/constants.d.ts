@@ -22,6 +22,7 @@ export declare const EVENT_TYPES: {
     LAYOUT_UPDATE: string;
     BEACON_STATE: string;
     BEACON_DIFF: string;
+    CALIBRATE_POSITIONS: string;
 };
 /** @type GlobalOptions */
 export declare const DEFAULT_OPTIONS: UserOptions;

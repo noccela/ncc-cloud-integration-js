@@ -231,6 +231,87 @@ export class EventChannel {
         };
         return this.register(EVENT_TYPES["TAG_STATE"], filter, callback);
     }
+    async getLayout(minorId = null) {
+        const payload = {
+            minorId: minorId
+        };
+        const msg = {
+            uniqueId: getUniqueId(),
+            action: "getLayout",
+            payload: payload
+        };
+        const response = await this._connection.sendRequest(msg, null);
+        return response === null || response === void 0 ? void 0 : response.payload;
+    }
+    async fillPolygon(masterPolygon, slavePolygons) {
+        const payload = {
+            masterPolygon: masterPolygon,
+            slavePolygons: slavePolygons
+        };
+        const msg = {
+            uniqueId: getUniqueId(),
+            action: "fillPolygon",
+            payload: payload
+        };
+        const response = await this._connection.sendRequest(msg, null);
+        return response === null || response === void 0 ? void 0 : response.payload;
+    }
+    async saveLayout(majorId, majorNumber, comment, floors, latitude = null, longitude = null, azimuthAngle = null) {
+        let uuid = getUniqueId();
+        let request = {
+            guid: "93243b0e-6fbf-4a68-a6c1-6da4b4e3c3e4",
+            layout: {
+                account: this._connection.account,
+                site: this._connection.site,
+                layouts: {
+                    remove: [],
+                    update: [],
+                    create: [{
+                            comment: comment,
+                            majorId: majorId,
+                            majorNumber: majorNumber,
+                            floors: floors,
+                            latitude: latitude,
+                            longitude: longitude,
+                            azimuthAngle: azimuthAngle
+                        }]
+                },
+                reloadSite: true
+            }
+        };
+        const msg = {
+            uniqueId: uuid,
+            action: "savelayout",
+            payload: request
+        };
+        const payload = await this._connection.sendRequest(msg, null);
+        return payload === null || payload === void 0 ? void 0 : payload.payload;
+    }
+    async calibratePositions(beaconPositions, tagPoints, callback) {
+        let uuid = getUniqueId();
+        if (tagPoints == null)
+            tagPoints = [];
+        const request = {
+            positions: beaconPositions,
+            tagPoints: tagPoints,
+            tagPointData: null,
+            maxDrift: null,
+            shiftUp: false,
+            amountOfBeaconsThatCanBeLeftOut: 0
+        };
+        const msg = {
+            uniqueId: uuid,
+            action: "calibratePositions",
+            payload: request
+        };
+        const responseAction = "calibratePositionsResponse";
+        let unregisterCallback = (payload) => {
+            this._connection.unregisterServerCallback(responseAction, uuid);
+            callback(payload);
+        };
+        this._connection.registerServerCallback(responseAction, uuid, unregisterCallback);
+        await this._connection.sendRequest(msg, null);
+    }
     /**
      * Register to incremental updates for tags' state on a given site.
      *
@@ -311,6 +392,26 @@ export class EventChannel {
             beaconDeviceIds: beaconDeviceIds
         };
         return this.register(EVENT_TYPES["TWR_DATA"], twrFilter, callback);
+    }
+    async getAvailableBeacons() {
+        const msg = {
+            uniqueId: getUniqueId(),
+            action: "getAvailableBeacons",
+            payload: {}
+        };
+        const payload = await this._connection.sendRequest(msg, null);
+        if (payload == null)
+            return null;
+        let response = [];
+        for (const item of payload.payload) {
+            let beaconItem = {
+                deviceId: item.deviceId,
+                deviceModel: item.deviceModel,
+                lastContact: item.lastContact
+            };
+            response.push(beaconItem);
+        }
+        return response;
     }
     /**
      * Reset tag's tripmeter.

@@ -413,7 +413,68 @@ export type TagRestrictionForMultiTagStep = {
     source: string,
     level: string
   };
-
+  export interface AvailableBeaconsResponse extends Array<AvailableBeaconItem> {}
+  export interface AvailableBeaconItem {
+    deviceId: number,
+    deviceModel: string,
+    lastContact: number | null
+  };
+  export type FillPolygonResponse = {
+    slavePolygons: Polygon[]
+  };
+  export type FillPolygonRequest = {
+    masterPolygon: Polygon,
+    slavePolygons: Polygon[]
+  };
+  export type Polygon = {
+    x: number,
+    y: number,
+    polygonPoints: PolygonPoint[]
+  };
+  export type CalibratePositionsResponse = {
+    beaconPositions: CalibratedBeaconPosition[],
+    tagPointPositions: TagPointPosition[],
+    rectangleWidth: number | null,
+    rectangleHeight: number | null,
+    ignoredBeaconsFromCalibration: number[]
+  };
+  export type CalibratedBeaconPosition = {
+    deviceId: number,
+    x: number,
+    y: number,
+    z: number,
+    floorId: number
+  };
+  export type TagPointPosition = {
+    id: number,
+    x: number,
+    y: number,
+    z: number,
+    floorId: number
+  };
+  export type CalibratePositionsRequest = {
+    positions: BeaconPosition[],
+    tagPoints: number[],
+    tagPointData: TagPointDataItem[] | null,
+    maxDrift: number | null,
+    shiftUp: boolean,
+    amountOfBeaconsThatCanBeLeftOut: number
+  };
+  export type BeaconPosition = {
+    deviceId: number,
+    x: number,
+    y: number,
+    z: number,
+    positionStatus: number
+  };
+  export type TagPointDataItem = {
+    deviceId: number,
+    id: number,
+    x: number | null,
+    y: number | null,
+    z: number | null,
+    distances : object
+  };
   export type RegisterRequest = {
     eventType: string,
     filter: MessageFilter,
@@ -468,7 +529,49 @@ export type TagRestrictionForMultiTagStep = {
     start: Date | null,
     stop: Date | null,
   };
+  export type GetLayoutRequest = {
+    minorId: number | null
+  };
+  export type GetLayoutResponse = {
+    floors: LayoutFloor[],
+    latitude: number | null,
+    longitude: number | null,
+    azimuthAngle: number | null
+  };
+  export type SaveLayoutResponse = {
+    layoutIds: SaveLayoutResponseItem[]
+  };
+  export type SaveLayoutResponseItem = {
+    majorId: number,
+    majorNumber: number,
+    minorId: number,
+    minorNumber: number
+  };
+  export type SaveLayoutRequest = {
+    guid: string,
+    layout: SaveLayoutItem
+  };
 
+  export type SaveLayoutItem = {
+    account: number,
+    site: number,
+    layouts: LayoutsRequest,
+    reloadSite: boolean
+  };
+  export type LayoutsRequest = {
+    remove: number[],
+    update: object[],
+    create: CreateLayoutRequest[]
+  };
+  export type CreateLayoutRequest = {
+    comment: string,
+    majorId: number | null,
+    majorNumber: number | null,
+    latitude: number | null,
+    longitude: number | null,
+    azimuthAngle: number | null,
+    floors: LayoutFloor[]
+  };
   export type SiteLayout = {
     floors: LayoutFloor[]
   };

@@ -123,6 +123,10 @@ export declare class EventChannel {
      * all devides from the site.
      */
     registerInitialTagState(callback: (err: string | null, payload: Types.TagInitialStateResponse) => void, deviceIds?: number[] | null): Promise<string>;
+    getLayout(minorId?: number | null): Promise<Types.GetLayoutResponse>;
+    fillPolygon(masterPolygon: Types.Polygon, slavePolygons: Types.Polygon[]): Promise<Types.FillPolygonResponse>;
+    saveLayout(majorId: number, majorNumber: number, comment: string, floors: Types.LayoutFloor[], latitude?: number | null, longitude?: number | null, azimuthAngle?: number | null): Promise<Types.SaveLayoutResponse>;
+    calibratePositions(beaconPositions: Types.BeaconPosition[], tagPoints: number[] | null, callback: (payload: Types.CalibratePositionsResponse) => void): Promise<void>;
     /**
      * Register to incremental updates for tags' state on a given site.
      *
@@ -154,6 +158,7 @@ export declare class EventChannel {
      * from. Null for all beacons.
      */
     registerTwrStream(callback: (err: string | null, payload: Types.TwrDataResponse) => void, tagDeviceIds?: number[] | null, beaconDeviceIds?: number[] | null): Promise<string>;
+    getAvailableBeacons(): Promise<Types.AvailableBeaconsResponse | null>;
     /**
      * Reset tag's tripmeter.
      *
